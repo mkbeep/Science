@@ -1,0 +1,43 @@
+================================================================================
+IT JOBS VIETNAM - FINAL REPORT
+Generated: 2026-05-08 16:22:34
+================================================================================
+
+1. OVERVIEW
+--------------------------------------------------------------------------------
+Total Jobs: 2,281
+Companies: 1,192
+Locations: 41
+
+2. TOP 10 LOCATIONS
+--------------------------------------------------------------------------------
+   1. Hà Nội                          1095 jobs
+   2. Hồ Chí Minh                      802 jobs
+   3. Bà Rịa - Vũng Tàu                 67 jobs
+   4. Bắc Ninh                          59 jobs
+   5. Hưng Yên                          38 jobs
+   6. Hải Phòng                         31 jobs
+   7. Bình Dương                        30 jobs
+   8. Quốc tế                           21 jobs
+   9. Đà Nẵng                           19 jobs
+  10. Đồng Nai                          14 jobs
+
+3. TOP 15 SKILLS
+--------------------------------------------------------------------------------
+   1. Data Analysis                              261 mentions
+   2. Phân Tích Dữ Liệu                          117 mentions
+   3. English                                    103 mentions
+   4. Project Management                          98 mentions
+   5. Communication Skills                        85 mentions
+   6. Technical Support                           79 mentions
+   7. SQL                                         78 mentions
+   8. Giao Tiếp                                   77 mentions
+   9. Communication                               74 mentions
+  10. Python                                      64 mentions
+  11. Công Nghệ Thông Tin                         52 mentions
+  12. Tiếng Anh                                   49 mentions
+  13. Kinh Doanh                                  48 mentions
+  14. Digital Marketing                           48 mentions
+  15. Business Analysis                           48 mentions
+
+================================================================================
