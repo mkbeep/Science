@@ -1,0 +1,64 @@
+======================================================================
+TOP COMPANIES ANALYSIS REPORT
+======================================================================
+
+Total Job Postings: 2,281
+Total Unique Companies: 1,192
+
+TOP 15 COMPANIES BY JOB COUNT:
+----------------------------------------------------------------------
+ 1. Bosch Global Software Technologies Company Limited   46 jobs ( 2.0%)
+ 2. NGÂN HÀNG TMCP QUÂN ĐỘI – MBBANK                46 jobs ( 2.0%)
+ 3. Navigos Search's Client                         40 jobs ( 1.8%)
+ 4. Navigos Search                                  38 jobs ( 1.7%)
+ 5. Tập Đoàn Bưu Chính Viễn Thông Việt Nam (VNPT)   24 jobs ( 1.1%)
+ 6. Vietnamworks' Client                            22 jobs ( 1.0%)
+ 7. ITECHWX COMPANY LIMITED                         22 jobs ( 1.0%)
+ 8. Ngân Hàng TMCP Đại Chúng Việt Nam               19 jobs ( 0.8%)
+ 9. MISA Jointstock Company                         18 jobs ( 0.8%)
+10. One Mount                                       15 jobs ( 0.7%)
+11. Ernst & Young Vietnam Limited (EY Vietnam)      15 jobs ( 0.7%)
+12. FPT Software                                    15 jobs ( 0.7%)
+13. Crossian Việt Nam                               14 jobs ( 0.6%)
+14. Công Ty Cổ Phần Chứng Khoán SSI                 14 jobs ( 0.6%)
+15. Techcombank                                     12 jobs ( 0.5%)
+
+TOP SKILLS REQUIRED BY LEADING COMPANIES:
+----------------------------------------------------------------------
+
+1. Bosch Global Software Technologies Company Limited (46 jobs)
+   Top Skills: English (12), Embedded (9), Python (7), C++ (6), C/C++ Programming (3)
+
+2. NGÂN HÀNG TMCP QUÂN ĐỘI – MBBANK (46 jobs)
+   Top Skills: Oracle (12), PostgreSQL (9), MongoDB (8), SQL (7), Spring Core (6)
+
+3. Navigos Search's Client (40 jobs)
+   Top Skills: C# (5), Project Management (4), Technical Lead (3), Communication (3), Data Analysis (3)
+
+4. Navigos Search (38 jobs)
+   Top Skills: Data Analysis (10), Communication (6), Digital Marketing (4), Market Analysis (4), Project Management (3)
+
+5. Tập Đoàn Bưu Chính Viễn Thông Việt Nam (VNPT) (24 jobs)
+   Top Skills: An Toàn Thông Tin (4), Linux (4), Công Nghệ Thông Tin (3), Bảo Mật Web (2), Quản Trị Hệ Thống (2)
+
+6. Vietnamworks' Client (22 jobs)
+   Top Skills: Data Analysis (4), Figma (2), Interaction Design (2), Graphic Design (2), Communication (2)
+
+7. ITECHWX COMPANY LIMITED (22 jobs)
+   Top Skills: Customer Service (7), Communication Skills (5), Problem-solving (5), Analytical Skills (5), Technical Support (4)
+
+8. Ngân Hàng TMCP Đại Chúng Việt Nam (19 jobs)
+   Top Skills: DevSecOps (3), Core Banking (3), Microservice (3), English (3), Công Nghệ Thông Tin (2)
+
+9. MISA Jointstock Company (18 jobs)
+   Top Skills: Market Research (3), Business Development (3), Tài Chính (2), Quản Trị Nhân Lực (2), Quản Trị Kinh Doanh (2)
+
+10. One Mount (15 jobs)
+   Top Skills: Data Structure (2), Supply Chain (2), Bất Động Sản (2), Agile (1), Jira (1)
+
+KEY INSIGHTS:
+----------------------------------------------------------------------
+• Most active recruiter: Bosch Global Software Technologies Company Limited (46 jobs)
+• Top 5 companies account for 8.5% of all job postings
+
+======================================================================
