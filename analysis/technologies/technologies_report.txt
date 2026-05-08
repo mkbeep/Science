@@ -1,0 +1,64 @@
+======================================================================
+MOST DEMANDED TECHNOLOGIES ANALYSIS REPORT
+======================================================================
+
+Total Job Postings: 2,281
+Jobs with Skills: 2,281 (100.0%)
+Total Technology Mentions: 10,865
+
+TECHNOLOGY CATEGORIES RANKING:
+----------------------------------------------------------------------
+1. Programming Languages            342 mentions
+2. AI/ML                            291 mentions
+3. Other Tools                      228 mentions
+4. Databases                        219 mentions
+5. Web Frameworks                    90 mentions
+6. Cloud Platforms                   78 mentions
+7. DevOps Tools                      54 mentions
+8. Mobile                            21 mentions
+
+TOP TECHNOLOGIES BY CATEGORY:
+----------------------------------------------------------------------
+
+Programming Languages:
+  • Python: 64 mentions
+  • Java: 30 mentions
+  • C#: 27 mentions
+  • JavaScript: 26 mentions
+  • C++: 25 mentions
+
+Web Frameworks:
+  • .Net: 10 mentions
+  • Spring Boot: 8 mentions
+  • React: 8 mentions
+  • ReactJS: 7 mentions
+  • .NET: 7 mentions
+
+Databases:
+  • SQL: 78 mentions
+  • Oracle: 29 mentions
+  • PostgreSQL: 24 mentions
+  • SQL Server: 14 mentions
+  • Oracle Database: 7 mentions
+
+Cloud Platforms:
+  • Cloud: 11 mentions
+  • AWS: 11 mentions
+  • Cloud Computing: 8 mentions
+  • Azure: 6 mentions
+  • Cloud Security: 6 mentions
+
+AI/ML:
+  • AI: 24 mentions
+  • Machine Learning: 18 mentions
+  • Deep Learning: 13 mentions
+  • Supply Chain: 13 mentions
+  • Data Science: 12 mentions
+
+KEY INSIGHTS:
+----------------------------------------------------------------------
+• Most demanded category: Programming Languages (342 mentions)
+• Most demanded technology: SQL (78 mentions)
+• Most popular programming language: Python (64 mentions)
+
+======================================================================
