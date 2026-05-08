@@ -45,48 +45,27 @@ def plot_top_companies(top_companies_df, save_path='analysis/topcompanies/'):
     print(f"✓ Chart saved: {os.path.join(save_path, 'top_companies.png')}")
     plt.show()
 
-def get_company_skills(df, top_n=10):
-    """Analyze most required skills by top companies"""
-    top_companies = df['company'].value_counts().head(top_n).index
+def get_company_skills(df, company):
+    """Get top skills for a specific company"""
+    company_jobs = df[df['company'] == company]
+    all_skills = []
     
-    company_skills = []
-    for company in top_companies:
-        company_jobs = df[df['company'] == company]
-        all_skills = []
-        
-        for skills_str in company_jobs['skills'].dropna():
-            if isinstance(skills_str, str) and skills_str.strip():
-                skills = [s.strip() for s in skills_str.split(',')]
-                all_skills.extend(skills)
-        
-        if all_skills:
-            top_skills = Counter(all_skills).most_common(5)
-            company_skills.append({
-                'Company': company,
-                'Job_Count': len(company_jobs),
-                'Top_Skills': ', '.join([f"{skill} ({count})" for skill, count in top_skills])
-            })
+    for skills_str in company_jobs['skills'].dropna():
+        if isinstance(skills_str, str) and skills_str.strip():
+            all_skills.extend([s.strip() for s in skills_str.split(',')])
     
-    return pd.DataFrame(company_skills)
+    return Counter(all_skills).most_common(5) if all_skills else []
 
 def plot_company_skills(df, top_n=10, save_path='analysis/topcompanies/'):
     """Create grouped bar chart showing top skills for each company"""
     top_companies = df['company'].value_counts().head(top_n).index
     
-    # Collect skill data for each company
+    # Collect skill data
     company_skill_data = {}
     for company in top_companies:
-        company_jobs = df[df['company'] == company]
-        all_skills = []
-        
-        for skills_str in company_jobs['skills'].dropna():
-            if isinstance(skills_str, str) and skills_str.strip():
-                skills = [s.strip() for s in skills_str.split(',')]
-                all_skills.extend(skills)
-        
-        if all_skills:
-            top_skills = Counter(all_skills).most_common(3)  # Top 3 skills per company
-            company_skill_data[company] = {skill: count for skill, count in top_skills}
+        top_skills = get_company_skills(df, company)
+        if top_skills:
+            company_skill_data[company] = {skill: count for skill, count in top_skills[:3]}
     
     if not company_skill_data:
         print("⚠ No company skills data available")
@@ -94,37 +73,22 @@ def plot_company_skills(df, top_n=10, save_path='analysis/topcompanies/'):
     
     # Create grouped bar chart
     fig, ax = plt.subplots(figsize=(16, 10))
-    
     companies = list(company_skill_data.keys())
-    x = range(len(companies))
+    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
     width = 0.25
     
-    # Get all unique skills across top companies
-    all_skills_set = set()
-    for skills_dict in company_skill_data.values():
-        all_skills_set.update(skills_dict.keys())
-    
-    # Prepare data for plotting (top 3 skills per company)
-    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
-    
     for idx, company in enumerate(companies):
-        skills_dict = company_skill_data[company]
-        skills_list = list(skills_dict.items())[:3]
-        
+        skills_list = list(company_skill_data[company].items())[:3]
         for skill_idx, (skill, count) in enumerate(skills_list):
             bar_pos = idx + (skill_idx - 1) * width
-            color = colors[skill_idx % len(colors)]
-            bar = ax.bar(bar_pos, count, width, color=color, alpha=0.8)
-            
-            # Add skill name on top of bar
+            ax.bar(bar_pos, count, width, color=colors[skill_idx], alpha=0.8)
             ax.text(bar_pos, count + 0.3, skill[:15], ha='center', va='bottom', 
                    fontsize=7, rotation=45, fontweight='bold')
     
-    # Customize plot
     ax.set_xlabel('Company', fontsize=12, fontweight='bold')
     ax.set_ylabel('Skill Mentions', fontsize=12, fontweight='bold')
     ax.set_title('Top 3 Skills Required by Leading IT Companies', fontsize=14, fontweight='bold', pad=20)
-    ax.set_xticks(x)
+    ax.set_xticks(range(len(companies)))
     ax.set_xticklabels([c[:30] + '...' if len(c) > 30 else c for c in companies], 
                        rotation=45, ha='right', fontsize=9)
     ax.grid(axis='y', alpha=0.3)
@@ -134,6 +98,25 @@ def plot_company_skills(df, top_n=10, save_path='analysis/topcompanies/'):
     plt.savefig(os.path.join(save_path, 'company_skills.png'), dpi=300, bbox_inches='tight')
     print(f"✓ Chart saved: {os.path.join(save_path, 'company_skills.png')}")
     plt.show()
+
+def get_company_skills_report(df, top_n=10):
+    """Get company skills data for report"""
+    top_companies = df['company'].value_counts().head(top_n).index
+    company_skills = []
+    
+    for company in top_companies:
+        company_jobs = df[df['company'] == company]
+        top_skills = get_company_skills(df, company)
+        
+        if top_skills:
+            skills_text = ', '.join([f"{skill} ({count})" for skill, count in top_skills])
+            company_skills.append({
+                'Company': company,
+                'Job_Count': len(company_jobs),
+                'Top_Skills': skills_text
+            })
+    
+    return pd.DataFrame(company_skills)
 
 def get_company_salary(df, top_n=10):
     """Analyze average salary by top companies"""
@@ -238,7 +221,7 @@ def main():
     plot_company_salary(company_salary_df)
     
     print("\nGenerating report...")
-    company_skills_df = get_company_skills(df, top_n=10)
+    company_skills_df = get_company_skills_report(df, top_n=10)
     report = generate_report(df, top_companies_df, company_skills_df, company_salary_df)
     print("\n" + report)
     

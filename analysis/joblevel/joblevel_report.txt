@@ -1,0 +1,56 @@
+============================================================
+JOB LEVEL DISTRIBUTION ANALYSIS REPORT
+============================================================
+
+Total Job Postings: 2,281
+Jobs with Level Info: 2,281 (100.0%)
+Unique Job Levels: 5
+
+JOB DISTRIBUTION BY LEVEL:
+------------------------------------------------------------
+1. Experienced (non-manager)            1738 jobs ( 76.2%)
+2. Manager                               327 jobs ( 14.3%)
+3. Fresher/Entry level                   122 jobs (  5.3%)
+4. Director and above                     62 jobs (  2.7%)
+5. Intern/Student                         32 jobs (  1.4%)
+
+TOP 5 SKILLS BY JOB LEVEL:
+------------------------------------------------------------
+
+Experienced (non-manager) (1738 jobs):
+  • Data Analysis: 189 mentions
+  • Phân Tích Dữ Liệu: 83 mentions
+  • English: 77 mentions
+  • SQL: 71 mentions
+  • Communication Skills: 68 mentions
+
+Manager (327 jobs):
+  • Data Analysis: 53 mentions
+  • Project Management: 35 mentions
+  • Phân Tích Dữ Liệu: 27 mentions
+  • Leadership: 22 mentions
+  • Team Management: 18 mentions
+
+Fresher/Entry level (122 jobs):
+  • English: 16 mentions
+  • Technical Support: 15 mentions
+  • Data Analysis: 11 mentions
+  • Giao Tiếp: 10 mentions
+  • Customer Service: 9 mentions
+
+
+TOP 5 LOCATIONS BY JOB LEVEL:
+------------------------------------------------------------
+1. Hà Nội                          1095 jobs ( 48.0%)
+2. Hồ Chí Minh                      802 jobs ( 35.2%)
+3. Bà Rịa - Vũng Tàu                 67 jobs (  2.9%)
+4. Bắc Ninh                          59 jobs (  2.6%)
+5. Hưng Yên                          38 jobs (  1.7%)
+
+KEY INSIGHTS:
+------------------------------------------------------------
+• Most common level: Experienced (non-manager) (1738 jobs)
+• Entry-level positions: 122 jobs (5.3%)
+• Senior positions: 389 jobs (17.1%)
+
+============================================================

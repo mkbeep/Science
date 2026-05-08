@@ -8,6 +8,7 @@ from .analyze_companies import (
     plot_top_companies,
     get_company_skills,
     plot_company_skills,
+    get_company_skills_report,
     get_company_salary,
     plot_company_salary,
     generate_report
@@ -19,6 +20,7 @@ __all__ = [
     'plot_top_companies',
     'get_company_skills',
     'plot_company_skills',
+    'get_company_skills_report',
     'get_company_salary',
     'plot_company_salary',
     'generate_report'
