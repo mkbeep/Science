@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { getStats, getTopSkills, getTopLocations, getJobLevels } from '../api/api';
 import { Stats, Skill, Location, JobLevel } from '../types';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -39,157 +35,408 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        color: '#6B7280'
+      }}>
+        Loading data...
       </div>
     );
   }
 
-  if (!stats) return <div className="p-8">No data available</div>;
+  if (!stats) return (
+    <div style={{ padding: '32px', fontFamily: 'Inter, sans-serif', color: '#6B7280' }}>
+      No data available
+    </div>
+  );
 
-  // Calculate max for location bars
   const maxLocationCount = Math.max(...topLocations.map(l => l.count));
-
-  // Calculate max for skills bars
   const maxSkillCount = Math.max(...topSkills.map(s => s.count));
-
-  // Calculate total for job levels
   const totalJobs = jobLevels.reduce((sum, level) => sum + level.count, 0);
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1440px] mx-auto">
-      {/* Page Header */}
-      <div className="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Market Intelligence Dashboard</h1>
-          <p className="text-gray-600 text-lg">Real-time overview of the Vietnamese IT recruitment landscape.</p>
-        </div>
-        <div className="flex gap-2">
-          <button className="bg-white border border-gray-300 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium hover:bg-gray-50 transition-colors">
-            <span className="material-symbols-outlined text-base">calendar_today</span>
-            Last 30 Days
-          </button>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm hover:bg-blue-700 transition-colors">
-            <span className="material-symbols-outlined text-base">download</span>
-            Export Report
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Total Jobs */}
-        <div className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm hover:-translate-y-1 transition-transform">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <span className="material-symbols-outlined text-blue-600">work</span>
+    <div style={{ 
+      backgroundColor: '#F8FAFC', 
+      minHeight: '100vh',
+      padding: '32px',
+      fontFamily: 'Inter, sans-serif'
+    }}>
+      <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
+        {/* Page Header */}
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start',
+            marginBottom: '8px'
+          }}>
+            <h1 style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px',
+              fontWeight: 'bold',
+              lineHeight: '40px',
+              color: '#1E3A5F',
+              margin: 0
+            }}>
+              IT Jobs Market Dashboard
+            </h1>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: '4px',
+                padding: '8px 14px',
+                fontSize: '13px',
+                fontWeight: '500',
+                color: '#1E3A5F',
+                cursor: 'pointer',
+                height: '36px'
+              }}>
+                Export Data
+              </button>
+              <button style={{
+                backgroundColor: '#1E3A5F',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '8px 14px',
+                fontSize: '13px',
+                fontWeight: '500',
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                height: '36px'
+              }}>
+                Refresh
+              </button>
             </div>
-            <span className="text-green-600 text-xs font-semibold flex items-center bg-green-50 px-2 py-1 rounded">
-              +12.5%
-            </span>
           </div>
-          <p className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider">Total Jobs</p>
-          <h2 className="text-4xl font-bold text-gray-900">{stats.total_jobs.toLocaleString()}</h2>
+          <p style={{ 
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '14px',
+            lineHeight: '22px',
+            color: '#6B7280',
+            margin: 0
+          }}>
+            Real-time analytics of Vietnamese IT recruitment market
+          </p>
         </div>
 
-        {/* Total Companies */}
-        <div className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm hover:-translate-y-1 transition-transform">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <span className="material-symbols-outlined text-purple-600">business</span>
+        {/* Stats Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '16px',
+          marginBottom: '32px'
+        }}>
+          {/* Total Jobs */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              TOTAL JOBS
             </div>
-            <span className="text-green-600 text-xs font-semibold flex items-center bg-green-50 px-2 py-1 rounded">
-              +4.2%
-            </span>
-          </div>
-          <p className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider">Total Companies</p>
-          <h2 className="text-4xl font-bold text-gray-900">{stats.total_companies.toLocaleString()}</h2>
-        </div>
-
-        {/* Total Locations */}
-        <div className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm hover:-translate-y-1 transition-transform">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <span className="material-symbols-outlined text-orange-600">location_on</span>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F',
+              marginBottom: '4px'
+            }}>
+              {stats.total_jobs.toLocaleString()}
             </div>
-            <span className="text-gray-500 text-xs font-semibold flex items-center bg-gray-100 px-2 py-1 rounded">
-              Stable
-            </span>
-          </div>
-          <p className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider">Total Locations</p>
-          <h2 className="text-4xl font-bold text-gray-900">{stats.total_locations}</h2>
-        </div>
-
-        {/* Unique Skills */}
-        <div className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm hover:-translate-y-1 transition-transform">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <span className="material-symbols-outlined text-blue-600">psychology</span>
+            <div style={{
+              display: 'inline-block',
+              backgroundColor: 'rgba(22, 163, 74, 0.1)',
+              color: '#16A34A',
+              fontSize: '12px',
+              fontWeight: '600',
+              padding: '4px 10px',
+              borderRadius: '2px'
+            }}>
+              Active
             </div>
-            <span className="text-green-600 text-xs font-semibold flex items-center bg-green-50 px-2 py-1 rounded">
-              +18%
-            </span>
           </div>
-          <p className="text-gray-500 text-xs font-semibold mb-1 uppercase tracking-wider">Unique Skills</p>
-          <h2 className="text-4xl font-bold text-gray-900">{stats.unique_skills.toLocaleString()}</h2>
-        </div>
-      </div>
 
-      {/* Dashboard Bento Grid */}
-      <div className="grid grid-cols-12 gap-6 mb-8">
-        {/* Top 15 Skills - Col Span 8 */}
-        <div className="col-span-12 lg:col-span-8 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Top 15 Skills Demand</h3>
-            <button className="text-blue-600 text-sm font-medium hover:underline">Full Analytics</button>
+          {/* Total Companies */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              TOTAL COMPANIES
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F',
+              marginBottom: '4px'
+            }}>
+              {stats.total_companies.toLocaleString()}
+            </div>
+            <div style={{
+              display: 'inline-block',
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
+              color: '#2563EB',
+              fontSize: '12px',
+              fontWeight: '600',
+              padding: '4px 10px',
+              borderRadius: '2px'
+            }}>
+              Verified
+            </div>
           </div>
-          <div className="p-6 h-[400px] flex items-end justify-between gap-1">
-            {topSkills.map((skill, idx) => {
-              const heightPercent = (skill.count / maxSkillCount) * 100;
-              return (
-                <div key={idx} className="flex flex-col items-center gap-2 flex-1">
-                  <div 
-                    className="w-full bg-blue-200 rounded-t-sm hover:opacity-80 transition-opacity cursor-pointer"
-                    style={{ height: `${heightPercent}%` }}
-                    title={`${skill.skill}: ${skill.count}`}
-                  ></div>
-                  <span className="text-[10px] text-gray-600 rotate-45 origin-left whitespace-nowrap">
-                    {skill.skill}
-                  </span>
-                </div>
-              );
-            })}
+
+          {/* Total Locations */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              LOCATIONS
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F',
+              marginBottom: '4px'
+            }}>
+              {stats.total_locations}
+            </div>
+            <div style={{
+              display: 'inline-block',
+              backgroundColor: 'rgba(107, 114, 128, 0.1)',
+              color: '#6B7280',
+              fontSize: '12px',
+              fontWeight: '600',
+              padding: '4px 10px',
+              borderRadius: '2px'
+            }}>
+              Nationwide
+            </div>
+          </div>
+
+          {/* Unique Skills */}
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              UNIQUE SKILLS
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F',
+              marginBottom: '4px'
+            }}>
+              {stats.unique_skills.toLocaleString()}
+            </div>
+            <div style={{
+              display: 'inline-block',
+              backgroundColor: 'rgba(202, 138, 4, 0.1)',
+              color: '#CA8A04',
+              fontSize: '12px',
+              fontWeight: '600',
+              padding: '4px 10px',
+              borderRadius: '2px'
+            }}>
+              Tracked
+            </div>
           </div>
         </div>
 
-        {/* Job Level Distribution - Col Span 4 */}
-        <div className="col-span-12 lg:col-span-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-900">Job Level Distribution</h3>
-          </div>
-          <div className="p-6 flex flex-col items-center justify-center h-[400px]">
-            {/* Donut Chart Simulated */}
-            <div className="relative w-48 h-48 rounded-full border-[18px] border-blue-200" 
-                 style={{
-                   borderLeftColor: '#6664e4',
-                   borderBottomColor: '#ac6300',
-                   borderRightColor: '#e2e2e7'
-                 }}>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-bold text-gray-900">By Level</span>
+        {/* Main Content Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(12, 1fr)',
+          gap: '16px',
+          marginBottom: '32px'
+        }}>
+          {/* Top Skills - 8 columns */}
+          <div style={{
+            gridColumn: 'span 8',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid #E2E8F0',
+              backgroundColor: '#F8FAFC'
+            }}>
+              <h3 style={{ 
+                fontFamily: 'Noto Serif, serif',
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1E3A5F',
+                margin: 0
+              }}>
+                Top 15 Skills in Demand
+              </h3>
+            </div>
+            <div style={{ padding: '16px' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-end', 
+                justifyContent: 'space-between',
+                height: '320px',
+                gap: '4px'
+              }}>
+                {topSkills.map((skill, idx) => {
+                  const heightPercent = (skill.count / maxSkillCount) * 100;
+                  return (
+                    <div key={idx} style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      flex: 1,
+                      gap: '8px'
+                    }}>
+                      <div 
+                        style={{ 
+                          width: '100%',
+                          height: `${heightPercent}%`,
+                          backgroundColor: '#2563EB',
+                          borderRadius: '2px 2px 0 0',
+                          cursor: 'pointer',
+                          transition: 'opacity 0.2s'
+                        }}
+                        title={`${skill.skill}: ${skill.count}`}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                      />
+                      <span style={{ 
+                        fontSize: '10px',
+                        color: '#6B7280',
+                        transform: 'rotate(45deg)',
+                        transformOrigin: 'left',
+                        whiteSpace: 'nowrap',
+                        width: '80px',
+                        textAlign: 'left'
+                      }}>
+                        {skill.skill}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <div className="mt-6 w-full space-y-2">
-              {jobLevels.slice(0, 4).map((level, idx) => {
-                const colors = ['bg-blue-200', 'bg-purple-200', 'bg-orange-200', 'bg-gray-300'];
-                const percentage = ((level.count / totalJobs) * 100).toFixed(0);
+          </div>
+
+          {/* Job Levels - 4 columns */}
+          <div style={{
+            gridColumn: 'span 4',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid #E2E8F0',
+              backgroundColor: '#F8FAFC'
+            }}>
+              <h3 style={{ 
+                fontFamily: 'Noto Serif, serif',
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1E3A5F',
+                margin: 0
+              }}>
+                Job Level Distribution
+              </h3>
+            </div>
+            <div style={{ padding: '24px 16px' }}>
+              {jobLevels.map((level, idx) => {
+                const percentage = ((level.count / totalJobs) * 100).toFixed(1);
+                const colors = ['#1E3A5F', '#2563EB', '#6B7280', '#CA8A04'];
                 return (
-                  <div key={idx} className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${colors[idx]}`}></div>
-                      <span className="text-sm text-gray-600">{level.level}</span>
+                  <div key={idx} style={{ marginBottom: '16px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      marginBottom: '6px'
+                    }}>
+                      <span style={{ 
+                        fontSize: '13px',
+                        color: '#1E3A5F',
+                        fontWeight: '500'
+                      }}>
+                        {level.level}
+                      </span>
+                      <span style={{ 
+                        fontSize: '13px',
+                        color: '#6B7280',
+                        fontWeight: '600'
+                      }}>
+                        {percentage}%
+                      </span>
                     </div>
-                    <span className="font-semibold text-gray-900">{percentage}%</span>
+                    <div style={{
+                      width: '100%',
+                      height: '8px',
+                      backgroundColor: '#F1F5F9',
+                      borderRadius: '2px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        width: `${percentage}%`,
+                        height: '100%',
+                        backgroundColor: colors[idx % colors.length],
+                        transition: 'width 0.3s'
+                      }} />
+                    </div>
                   </div>
                 );
               })}
@@ -197,53 +444,168 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Top 10 Locations - Col Span 12 */}
-        <div className="col-span-12 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Top 10 Locations</h3>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-2 text-sm text-gray-600">
-                <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                Total Openings
-              </span>
+        {/* Top Locations Table */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '4px',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          overflow: 'hidden',
+          marginBottom: '32px'
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid #E2E8F0',
+            backgroundColor: '#F8FAFC'
+          }}>
+            <h3 style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              margin: 0
+            }}>
+              Top 10 Locations
+            </h3>
+          </div>
+          <div style={{ padding: '0' }}>
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse',
+              fontSize: '13px'
+            }}>
+              <thead>
+                <tr style={{ 
+                  backgroundColor: '#F8FAFC',
+                  borderBottom: '1px solid #E2E8F0'
+                }}>
+                  <th style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: '600',
+                    color: '#6B7280',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    LOCATION
+                  </th>
+                  <th style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'right',
+                    fontWeight: '600',
+                    color: '#6B7280',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    JOB COUNT
+                  </th>
+                  <th style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: '600',
+                    color: '#6B7280',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    width: '50%'
+                  }}>
+                    DISTRIBUTION
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {topLocations.map((location, idx) => {
+                  const widthPercent = (location.count / maxLocationCount) * 100;
+                  return (
+                    <tr key={idx} style={{ 
+                      borderBottom: '1px solid #E2E8F0',
+                      height: '40px'
+                    }}>
+                      <td style={{ 
+                        padding: '8px 16px',
+                        color: '#1E3A5F',
+                        fontWeight: '500'
+                      }}>
+                        {location.location}
+                      </td>
+                      <td style={{ 
+                        padding: '8px 16px',
+                        textAlign: 'right',
+                        color: '#1E3A5F',
+                        fontWeight: '600'
+                      }}>
+                        {location.count.toLocaleString()}
+                      </td>
+                      <td style={{ padding: '8px 16px' }}>
+                        <div style={{
+                          width: '100%',
+                          height: '8px',
+                          backgroundColor: '#F1F5F9',
+                          borderRadius: '2px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            width: `${widthPercent}%`,
+                            height: '100%',
+                            backgroundColor: '#1E3A5F',
+                            transition: 'width 0.3s'
+                          }} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Info Banner */}
+        <div style={{
+          backgroundColor: '#EFF6FF',
+          border: '1px solid #BFDBFE',
+          borderRadius: '4px',
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            backgroundColor: '#2563EB',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#FFFFFF',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            flexShrink: 0
+          }}>
+            i
+          </div>
+          <div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              marginBottom: '4px'
+            }}>
+              Data Updated Daily
+            </div>
+            <div style={{ 
+              fontSize: '13px',
+              color: '#6B7280',
+              lineHeight: '20px'
+            }}>
+              This dashboard aggregates job postings from major Vietnamese IT recruitment platforms. 
+              Data is refreshed every 24 hours to ensure accuracy and relevance.
             </div>
           </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-            {topLocations.map((location, idx) => {
-              const widthPercent = (location.count / maxLocationCount) * 100;
-              return (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-900 font-medium">{location.location}</span>
-                    <span className="text-gray-600">{location.count.toLocaleString()}</span>
-                  </div>
-                  <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-600 transition-all duration-500"
-                      style={{ width: `${widthPercent}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Premium Insights Card */}
-      <div className="bg-blue-600 text-white p-8 rounded-lg mb-8 relative overflow-hidden flex flex-col md:flex-row items-center justify-between">
-        <div className="relative z-10">
-          <h3 className="text-3xl font-bold mb-2">Premium Insights Ready</h3>
-          <p className="text-lg opacity-90 max-w-xl">
-            Deep dive into salary benchmarking and candidate movement trends across 12 sectors. 
-            Update your enterprise plan to access full data exports.
-          </p>
-          <button className="mt-6 bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
-            Upgrade to Pro
-          </button>
-        </div>
-        <div className="mt-8 md:mt-0 opacity-20 pointer-events-none">
-          <span className="material-symbols-outlined text-[160px]">monitoring</span>
         </div>
       </div>
     </div>

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { compareCities, getAIMLStats, getTopCompanies } from '../api/api';
 import { CitiesComparison, AIMLStats, Company } from '../types';
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 type TabType = 'cities' | 'ai' | 'companies';
 
@@ -34,8 +38,29 @@ const Analytics: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="loading">Loading...</div>;
-  if (!citiesData || !aiData) return <div className="loading">No data available</div>;
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        color: '#6B7280'
+      }}>
+        Loading analytics data...
+      </div>
+    );
+  }
+
+  if (!citiesData || !aiData) {
+    return (
+      <div style={{ padding: '32px', fontFamily: 'Inter, sans-serif', color: '#6B7280' }}>
+        No data available
+      </div>
+    );
+  }
 
   const renderCitiesTab = () => {
     const cityComparisonData = {
@@ -43,63 +68,212 @@ const Analytics: React.FC = () => {
       datasets: [{
         label: 'Job Count',
         data: [citiesData.hanoi.total_jobs, citiesData.hcm.total_jobs],
-        backgroundColor: ['rgba(255, 107, 107, 0.8)', 'rgba(78, 205, 196, 0.8)'],
+        backgroundColor: ['#1E3A5F', '#2563EB'],
       }]
     };
 
     return (
       <div>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-label">Hà Nội Jobs</div>
-            <div className="stat-value">{citiesData.hanoi.total_jobs}</div>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '16px',
+          marginBottom: '32px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              HÀ NỘI JOBS
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F'
+            }}>
+              {citiesData.hanoi.total_jobs.toLocaleString()}
+            </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-label">HCM Jobs</div>
-            <div className="stat-value">{citiesData.hcm.total_jobs}</div>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              HỒ CHÍ MINH JOBS
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F'
+            }}>
+              {citiesData.hcm.total_jobs.toLocaleString()}
+            </div>
           </div>
         </div>
 
-        <div className="chart-container">
-          <h2>Job Count Comparison</h2>
-          <Bar data={cityComparisonData} options={{ responsive: true }} />
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '4px',
+          padding: '16px',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          marginBottom: '16px'
+        }}>
+          <h2 style={{ 
+            fontFamily: 'Noto Serif, serif',
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1E3A5F',
+            marginBottom: '16px',
+            paddingBottom: '12px',
+            borderBottom: '1px solid #E2E8F0'
+          }}>
+            Job Count Comparison
+          </h2>
+          <Bar data={cityComparisonData} options={{ 
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }} />
         </div>
 
-        <div className="charts-grid">
-          <div className="card">
-            <h3>Top Skills in Hà Nội</h3>
-            <table style={{ width: '100%', marginTop: '1rem' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+          gap: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid #E2E8F0',
+              backgroundColor: '#F8FAFC'
+            }}>
+              <h3 style={{ 
+                fontFamily: 'Noto Serif, serif',
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1E3A5F',
+                margin: 0
+              }}>
+                Top Skills in Hà Nội
+              </h3>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ textAlign: 'left', padding: '0.5rem' }}>Skill</th>
-                  <th style={{ textAlign: 'right', padding: '0.5rem' }}>Count</th>
+                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                  <th style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: '600',
+                    color: '#6B7280',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>SKILL</th>
+                  <th style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'right',
+                    fontWeight: '600',
+                    color: '#6B7280',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>COUNT</th>
                 </tr>
               </thead>
               <tbody>
                 {citiesData.hanoi.top_skills.map((skill, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '0.5rem' }}>{skill.skill}</td>
-                    <td style={{ textAlign: 'right', padding: '0.5rem' }}>{skill.count}</td>
+                  <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', height: '40px' }}>
+                    <td style={{ padding: '8px 16px', color: '#1E3A5F', fontWeight: '500' }}>{skill.skill}</td>
+                    <td style={{ padding: '8px 16px', textAlign: 'right', color: '#1E3A5F', fontWeight: '600' }}>{skill.count}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="card">
-            <h3>Top Skills in HCM</h3>
-            <table style={{ width: '100%', marginTop: '1rem' }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid #E2E8F0',
+              backgroundColor: '#F8FAFC'
+            }}>
+              <h3 style={{ 
+                fontFamily: 'Noto Serif, serif',
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1E3A5F',
+                margin: 0
+              }}>
+                Top Skills in HCM
+              </h3>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ textAlign: 'left', padding: '0.5rem' }}>Skill</th>
-                  <th style={{ textAlign: 'right', padding: '0.5rem' }}>Count</th>
+                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                  <th style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'left',
+                    fontWeight: '600',
+                    color: '#6B7280',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>SKILL</th>
+                  <th style={{ 
+                    padding: '12px 16px',
+                    textAlign: 'right',
+                    fontWeight: '600',
+                    color: '#6B7280',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>COUNT</th>
                 </tr>
               </thead>
               <tbody>
                 {citiesData.hcm.top_skills.map((skill, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '0.5rem' }}>{skill.skill}</td>
-                    <td style={{ textAlign: 'right', padding: '0.5rem' }}>{skill.count}</td>
+                  <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', height: '40px' }}>
+                    <td style={{ padding: '8px 16px', color: '#1E3A5F', fontWeight: '500' }}>{skill.skill}</td>
+                    <td style={{ padding: '8px 16px', textAlign: 'right', color: '#1E3A5F', fontWeight: '600' }}>{skill.count}</td>
                   </tr>
                 ))}
               </tbody>
@@ -116,30 +290,125 @@ const Analytics: React.FC = () => {
       datasets: [{
         label: 'Job Mentions',
         data: aiData.skills.map(s => s.count),
-        backgroundColor: 'rgba(156, 39, 176, 0.8)',
+        backgroundColor: '#2563EB',
       }]
     };
 
     return (
       <div>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-label">AI/ML Jobs</div>
-            <div className="stat-value">{aiData.ai_jobs}</div>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '16px',
+          marginBottom: '32px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              AI/ML JOBS
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F'
+            }}>
+              {aiData.ai_jobs.toLocaleString()}
+            </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-label">Percentage</div>
-            <div className="stat-value">{aiData.percentage}%</div>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              PERCENTAGE
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F'
+            }}>
+              {aiData.percentage}%
+            </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-label">Total Jobs</div>
-            <div className="stat-value">{aiData.total_jobs}</div>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              TOTAL JOBS
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#1E3A5F'
+            }}>
+              {aiData.total_jobs.toLocaleString()}
+            </div>
           </div>
         </div>
 
-        <div className="chart-container">
-          <h2>AI/ML Skills Demand</h2>
-          <Bar data={aiChartData} options={{ responsive: true, indexAxis: 'y' }} />
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '4px',
+          padding: '16px',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+        }}>
+          <h2 style={{ 
+            fontFamily: 'Noto Serif, serif',
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1E3A5F',
+            marginBottom: '16px',
+            paddingBottom: '12px',
+            borderBottom: '1px solid #E2E8F0'
+          }}>
+            AI/ML Skills Demand
+          </h2>
+          <Bar data={aiChartData} options={{ 
+            responsive: true, 
+            indexAxis: 'y',
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }} />
         </div>
       </div>
     );
@@ -151,33 +420,102 @@ const Analytics: React.FC = () => {
       datasets: [{
         label: 'Job Count',
         data: companiesData.map(c => c.count),
-        backgroundColor: 'rgba(255, 152, 0, 0.8)',
+        backgroundColor: '#1E3A5F',
       }]
     };
 
     return (
       <div>
-        <div className="chart-container">
-          <h2>Top 15 Companies</h2>
-          <Bar data={companiesChartData} options={{ responsive: true, indexAxis: 'y' }} />
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '4px',
+          padding: '16px',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          marginBottom: '16px'
+        }}>
+          <h2 style={{ 
+            fontFamily: 'Noto Serif, serif',
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1E3A5F',
+            marginBottom: '16px',
+            paddingBottom: '12px',
+            borderBottom: '1px solid #E2E8F0'
+          }}>
+            Top 15 Companies
+          </h2>
+          <Bar data={companiesChartData} options={{ 
+            responsive: true, 
+            indexAxis: 'y',
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }} />
         </div>
 
-        <div className="card">
-          <h3>Company Details</h3>
-          <table style={{ width: '100%', marginTop: '1rem' }}>
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '4px',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid #E2E8F0',
+            backgroundColor: '#F8FAFC'
+          }}>
+            <h3 style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              margin: 0
+            }}>
+              Company Details
+            </h3>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                <th style={{ textAlign: 'left', padding: '0.5rem' }}>Company</th>
-                <th style={{ textAlign: 'right', padding: '0.5rem' }}>Jobs</th>
-                <th style={{ textAlign: 'right', padding: '0.5rem' }}>%</th>
+              <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  fontWeight: '600',
+                  color: '#6B7280',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>COMPANY</th>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'right',
+                  fontWeight: '600',
+                  color: '#6B7280',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>JOBS</th>
+                <th style={{ 
+                  padding: '12px 16px',
+                  textAlign: 'right',
+                  fontWeight: '600',
+                  color: '#6B7280',
+                  fontSize: '11px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>%</th>
               </tr>
             </thead>
             <tbody>
               {companiesData.map((company, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '0.5rem' }}>{company.company}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem' }}>{company.count}</td>
-                  <td style={{ textAlign: 'right', padding: '0.5rem' }}>
+                <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', height: '40px' }}>
+                  <td style={{ padding: '8px 16px', color: '#1E3A5F', fontWeight: '500' }}>{company.company}</td>
+                  <td style={{ padding: '8px 16px', textAlign: 'right', color: '#1E3A5F', fontWeight: '600' }}>{company.count}</td>
+                  <td style={{ padding: '8px 16px', textAlign: 'right', color: '#6B7280' }}>
                     {((company.count / aiData.total_jobs) * 100).toFixed(2)}%
                   </td>
                 </tr>
@@ -190,33 +528,129 @@ const Analytics: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1 style={{ marginBottom: '2rem', color: '#2d3748' }}>📊 Analytics</h1>
+    <div style={{ 
+      backgroundColor: '#F8FAFC', 
+      minHeight: '100vh',
+      padding: '32px',
+      fontFamily: 'Inter, sans-serif'
+    }}>
+      <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
+        <h1 style={{ 
+          fontFamily: 'Noto Serif, serif',
+          fontSize: '30px',
+          fontWeight: 'bold',
+          lineHeight: '40px',
+          color: '#1E3A5F',
+          marginBottom: '32px'
+        }}>
+          Analytics Dashboard
+        </h1>
 
-      <div className="tabs">
-        <button 
-          className={`tab ${activeTab === 'cities' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('cities')}
-        >
-          🏙️ Cities
-        </button>
-        <button 
-          className={`tab ${activeTab === 'ai' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('ai')}
-        >
-          🤖 AI/ML
-        </button>
-        <button 
-          className={`tab ${activeTab === 'companies' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('companies')}
-        >
-          🏢 Companies
-        </button>
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          marginBottom: '24px',
+          borderBottom: '1px solid #E2E8F0',
+          backgroundColor: '#FFFFFF',
+          padding: '0 16px',
+          borderRadius: '4px 4px 0 0'
+        }}>
+          <button 
+            style={{
+              padding: '12px 16px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: activeTab === 'cities' ? '600' : '500',
+              color: activeTab === 'cities' ? '#1E3A5F' : '#6B7280',
+              borderBottom: activeTab === 'cities' ? '2px solid #1E3A5F' : '2px solid transparent',
+              marginBottom: '-1px',
+              transition: 'all 0.15s ease',
+              fontFamily: 'Inter, sans-serif'
+            }}
+            onClick={() => setActiveTab('cities')}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'cities') {
+                e.currentTarget.style.color = '#1E3A5F';
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'cities') {
+                e.currentTarget.style.color = '#6B7280';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            🏙️ Cities Comparison
+          </button>
+          <button 
+            style={{
+              padding: '12px 16px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: activeTab === 'ai' ? '600' : '500',
+              color: activeTab === 'ai' ? '#1E3A5F' : '#6B7280',
+              borderBottom: activeTab === 'ai' ? '2px solid #1E3A5F' : '2px solid transparent',
+              marginBottom: '-1px',
+              transition: 'all 0.15s ease',
+              fontFamily: 'Inter, sans-serif'
+            }}
+            onClick={() => setActiveTab('ai')}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'ai') {
+                e.currentTarget.style.color = '#1E3A5F';
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'ai') {
+                e.currentTarget.style.color = '#6B7280';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            🤖 AI/ML Analysis
+          </button>
+          <button 
+            style={{
+              padding: '12px 16px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: activeTab === 'companies' ? '600' : '500',
+              color: activeTab === 'companies' ? '#1E3A5F' : '#6B7280',
+              borderBottom: activeTab === 'companies' ? '2px solid #1E3A5F' : '2px solid transparent',
+              marginBottom: '-1px',
+              transition: 'all 0.15s ease',
+              fontFamily: 'Inter, sans-serif'
+            }}
+            onClick={() => setActiveTab('companies')}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'companies') {
+                e.currentTarget.style.color = '#1E3A5F';
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'companies') {
+                e.currentTarget.style.color = '#6B7280';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            🏢 Top Companies
+          </button>
+        </div>
+
+        {activeTab === 'cities' && renderCitiesTab()}
+        {activeTab === 'ai' && renderAITab()}
+        {activeTab === 'companies' && renderCompaniesTab()}
       </div>
-
-      {activeTab === 'cities' && renderCitiesTab()}
-      {activeTab === 'ai' && renderAITab()}
-      {activeTab === 'companies' && renderCompaniesTab()}
     </div>
   );
 };

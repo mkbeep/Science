@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import './App.css';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import JobSearch from './pages/JobSearch';
@@ -11,115 +12,311 @@ const AppContent: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Top NavBar */}
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center gap-8">
-          <span className="text-lg font-bold text-blue-600">IT Jobs Vietnam</span>
-          <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-4 py-2 gap-2">
-            <span className="material-symbols-outlined text-gray-500">search</span>
+    <div style={{ 
+      backgroundColor: '#F8FAFC', 
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      {/* Top NavBar - CorpScale Style */}
+      <header style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 50,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0 32px',
+        height: '64px',
+        backgroundColor: '#1E3A5F',
+        borderBottom: '1px solid #162D4A',
+        boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+          <span style={{ 
+            fontFamily: 'Noto Serif, serif',
+            fontSize: '24px', 
+            fontWeight: 'bold', 
+            color: '#FFFFFF'
+          }}>
+            IT Jobs Vietnam
+          </span>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '4px',
+            padding: '8px 12px',
+            gap: '8px',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '18px' }}>🔍</span>
             <input 
-              className="bg-transparent border-none focus:ring-0 text-sm w-64 outline-none" 
-              placeholder="Global search..." 
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: '#FFFFFF',
+                fontSize: '13px',
+                width: '240px'
+              }}
+              placeholder="Search jobs, skills, companies..." 
               type="text"
             />
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
-            <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-              <span className="material-symbols-outlined text-gray-600">notifications</span>
-            </button>
-            <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-              <span className="material-symbols-outlined text-gray-600">settings</span>
-            </button>
-          </div>
-          <div className="h-8 w-8 rounded-full bg-blue-200 overflow-hidden">
-            <img 
-              alt="User profile" 
-              className="h-full w-full object-cover" 
-              src="https://ui-avatars.com/api/?name=Admin&background=3b82f6&color=fff"
-            />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button style={{
+            padding: '8px',
+            borderRadius: '4px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'rgba(255, 255, 255, 0.8)',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <span style={{ fontSize: '20px' }}>🔔</span>
+          </button>
+          <button style={{
+            padding: '8px',
+            borderRadius: '4px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'rgba(255, 255, 255, 0.8)',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <span style={{ fontSize: '20px' }}>⚙️</span>
+          </button>
+          <div style={{
+            height: '32px',
+            width: '32px',
+            borderRadius: '9999px',
+            backgroundColor: '#2563EB',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#FFFFFF',
+            fontWeight: '600',
+            fontSize: '14px'
+          }}>
+            A
           </div>
         </div>
       </header>
 
-      {/* Side NavBar */}
-      <aside className="fixed left-0 top-16 h-[calc(100vh-64px)] w-[260px] bg-white border-r border-gray-200 flex flex-col py-4 overflow-y-auto">
-        <div className="px-4 mb-6">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="material-symbols-outlined text-blue-600 text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-              work
-            </span>
-            <span className="text-lg font-bold text-blue-600">Recruiter Portal</span>
+      {/* Side NavBar - CorpScale Style */}
+      <aside style={{
+        position: 'fixed',
+        left: 0,
+        top: '64px',
+        height: 'calc(100vh - 64px)',
+        width: '260px',
+        backgroundColor: '#FFFFFF',
+        borderRight: '1px solid #E2E8F0',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '16px 0',
+        overflowY: 'auto'
+      }}>
+        <div style={{ padding: '0 16px', marginBottom: '24px' }}>
+          <div style={{ 
+            fontFamily: 'Noto Serif, serif',
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#1E3A5F',
+            marginBottom: '4px'
+          }}>
+            Recruiter Portal
           </div>
-          <p className="text-gray-500 text-sm opacity-70">Enterprise Edition</p>
+          <p style={{ 
+            color: '#6B7280', 
+            fontSize: '12px',
+            margin: 0
+          }}>
+            Enterprise Edition
+          </p>
         </div>
 
-        <nav className="flex-grow space-y-1">
+        <nav style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <Link 
             to="/" 
-            className={`flex items-center gap-4 px-4 py-2 transition-all ${
-              isActive('/') 
-                ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+              backgroundColor: isActive('/') ? '#EFF6FF' : 'transparent',
+              color: isActive('/') ? '#1E3A5F' : '#6B7280',
+              borderLeft: isActive('/') ? '2px solid #1E3A5F' : '2px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive('/')) {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/')) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
           >
-            <span className="material-symbols-outlined">dashboard</span>
-            <span className="font-medium">Dashboard</span>
+            <span style={{ fontSize: '20px' }}>📊</span>
+            <span>Dashboard</span>
           </Link>
 
           <Link 
             to="/analytics" 
-            className={`flex items-center gap-4 px-4 py-2 transition-all ${
-              isActive('/analytics') 
-                ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+              backgroundColor: isActive('/analytics') ? '#EFF6FF' : 'transparent',
+              color: isActive('/analytics') ? '#1E3A5F' : '#6B7280',
+              borderLeft: isActive('/analytics') ? '2px solid #1E3A5F' : '2px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive('/analytics')) {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/analytics')) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
           >
-            <span className="material-symbols-outlined">analytics</span>
-            <span className="font-medium">Analytics</span>
+            <span style={{ fontSize: '20px' }}>📈</span>
+            <span>Analytics</span>
           </Link>
 
           <Link 
             to="/search" 
-            className={`flex items-center gap-4 px-4 py-2 transition-all ${
-              isActive('/search') 
-                ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+              backgroundColor: isActive('/search') ? '#EFF6FF' : 'transparent',
+              color: isActive('/search') ? '#1E3A5F' : '#6B7280',
+              borderLeft: isActive('/search') ? '2px solid #1E3A5F' : '2px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive('/search')) {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/search')) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
           >
-            <span className="material-symbols-outlined">search</span>
-            <span className="font-medium">Job Search</span>
+            <span style={{ fontSize: '20px' }}>🔍</span>
+            <span>Job Search</span>
           </Link>
 
           <Link 
             to="/trends" 
-            className={`flex items-center gap-4 px-4 py-2 transition-all ${
-              isActive('/trends') 
-                ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600' 
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+              backgroundColor: isActive('/trends') ? '#EFF6FF' : 'transparent',
+              color: isActive('/trends') ? '#1E3A5F' : '#6B7280',
+              borderLeft: isActive('/trends') ? '2px solid #1E3A5F' : '2px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive('/trends')) {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/trends')) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
           >
-            <span className="material-symbols-outlined">trending_up</span>
-            <span className="font-medium">Technology Trends</span>
+            <span style={{ fontSize: '20px' }}>📉</span>
+            <span>Technology Trends</span>
           </Link>
         </nav>
 
-        <div className="mt-auto border-t border-gray-200 pt-4 space-y-1">
-          <a className="flex items-center gap-4 text-gray-600 px-4 py-2 hover:bg-gray-100 transition-all" href="#">
-            <span className="material-symbols-outlined">help</span>
-            <span className="font-medium">Support</span>
+        <div style={{ 
+          marginTop: 'auto', 
+          borderTop: '1px solid #E2E8F0',
+          paddingTop: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <a style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '8px 16px',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#6B7280',
+            transition: 'all 0.15s ease'
+          }}
+          href="#"
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <span style={{ fontSize: '20px' }}>❓</span>
+            <span>Support</span>
           </a>
-          <a className="flex items-center gap-4 text-gray-600 px-4 py-2 hover:bg-gray-100 transition-all" href="#">
-            <span className="material-symbols-outlined">settings</span>
-            <span className="font-medium">Settings</span>
+          <a style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '8px 16px',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#6B7280',
+            transition: 'all 0.15s ease'
+          }}
+          href="#"
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+            <span style={{ fontSize: '20px' }}>⚙️</span>
+            <span>Settings</span>
           </a>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="ml-[260px] pt-16 min-h-screen">
+      <main style={{ 
+        marginLeft: '260px', 
+        paddingTop: '64px',
+        minHeight: '100vh'
+      }}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
@@ -129,19 +326,63 @@ const AppContent: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="flex justify-between items-center px-6 py-4 ml-[260px] bg-white border-t border-gray-200">
-        <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider">
-          © 2026 IT Jobs Vietnam. Data-driven Recruitment Excellence.
+      <footer style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px 32px',
+        marginLeft: '260px',
+        backgroundColor: '#FFFFFF',
+        borderTop: '1px solid #E2E8F0',
+        fontSize: '12px'
+      }}>
+        <div style={{ 
+          color: '#6B7280',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}>
+          © 2026 IT Jobs Vietnam. Enterprise Analytics Platform.
         </div>
-        <div className="flex gap-6">
-          <a className="text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-blue-600 transition-colors" href="#">
-            Crawler Status
+        <div style={{ display: 'flex', gap: '24px' }}>
+          <a style={{
+            color: '#6B7280',
+            textDecoration: 'none',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            transition: 'color 0.15s ease'
+          }}
+          href="#"
+          onMouseEnter={(e) => e.currentTarget.style.color = '#2563EB'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}>
+            API Status
           </a>
-          <a className="text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-blue-600 transition-colors" href="#">
-            React Frontend
+          <a style={{
+            color: '#6B7280',
+            textDecoration: 'none',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            transition: 'color 0.15s ease'
+          }}
+          href="#"
+          onMouseEnter={(e) => e.currentTarget.style.color = '#2563EB'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}>
+            Documentation
           </a>
-          <a className="text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-blue-600 transition-colors" href="#">
-            Flask API
+          <a style={{
+            color: '#6B7280',
+            textDecoration: 'none',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            transition: 'color 0.15s ease'
+          }}
+          href="#"
+          onMouseEnter={(e) => e.currentTarget.style.color = '#2563EB'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}>
+            Support
           </a>
         </div>
       </footer>
