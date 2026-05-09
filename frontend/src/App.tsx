@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import JobSearch from './pages/JobSearch';
 import Trends from './pages/Trends';
+import SkillNetwork from './pages/SkillNetwork';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -41,7 +42,7 @@ const AppContent: React.FC = () => {
             fontWeight: 'bold', 
             color: '#FFFFFF'
           }}>
-            IT Jobs Vietnam
+            Việc Làm IT Việt Nam
           </span>
           <div style={{ 
             display: 'flex', 
@@ -62,7 +63,7 @@ const AppContent: React.FC = () => {
                 fontSize: '13px',
                 width: '240px'
               }}
-              placeholder="Search jobs, skills, companies..." 
+              placeholder="Tìm kiếm công việc, kỹ năng, công ty..." 
               type="text"
             />
           </div>
@@ -133,14 +134,14 @@ const AppContent: React.FC = () => {
             color: '#1E3A5F',
             marginBottom: '4px'
           }}>
-            Recruiter Portal
+            Cổng Tuyển Dụng
           </div>
           <p style={{ 
             color: '#6B7280', 
             fontSize: '12px',
             margin: 0
           }}>
-            Enterprise Edition
+            Phiên Bản Doanh Nghiệp
           </p>
         </div>
 
@@ -202,7 +203,7 @@ const AppContent: React.FC = () => {
             }}
           >
             <span style={{ fontSize: '20px' }}>📈</span>
-            <span>Analytics</span>
+            <span>Phân Tích</span>
           </Link>
 
           <Link 
@@ -232,7 +233,7 @@ const AppContent: React.FC = () => {
             }}
           >
             <span style={{ fontSize: '20px' }}>🔍</span>
-            <span>Job Search</span>
+            <span>Tìm Việc</span>
           </Link>
 
           <Link 
@@ -262,7 +263,37 @@ const AppContent: React.FC = () => {
             }}
           >
             <span style={{ fontSize: '20px' }}>📉</span>
-            <span>Technology Trends</span>
+            <span>Xu Hướng Công Nghệ</span>
+          </Link>
+
+          <Link 
+            to="/skill-network" 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+              backgroundColor: isActive('/skill-network') ? '#EFF6FF' : 'transparent',
+              color: isActive('/skill-network') ? '#1E3A5F' : '#6B7280',
+              borderLeft: isActive('/skill-network') ? '2px solid #1E3A5F' : '2px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive('/skill-network')) {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/skill-network')) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>🔗</span>
+            <span>Skill Network</span>
           </Link>
         </nav>
 
@@ -289,7 +320,7 @@ const AppContent: React.FC = () => {
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
             <span style={{ fontSize: '20px' }}>❓</span>
-            <span>Support</span>
+            <span>Hỗ Trợ</span>
           </a>
           <a style={{
             display: 'flex',
@@ -306,7 +337,7 @@ const AppContent: React.FC = () => {
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
             <span style={{ fontSize: '20px' }}>⚙️</span>
-            <span>Settings</span>
+            <span>Cài Đặt</span>
           </a>
         </div>
       </aside>
@@ -322,6 +353,7 @@ const AppContent: React.FC = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/search" element={<JobSearch />} />
           <Route path="/trends" element={<Trends />} />
+          <Route path="/skill-network" element={<SkillNetwork />} />
         </Routes>
       </main>
 
@@ -342,7 +374,7 @@ const AppContent: React.FC = () => {
           textTransform: 'uppercase',
           letterSpacing: '0.05em'
         }}>
-          © 2026 IT Jobs Vietnam. Enterprise Analytics Platform.
+          © 2026 Việc Làm IT Việt Nam. Nền Tảng Phân Tích Doanh Nghiệp.
         </div>
         <div style={{ display: 'flex', gap: '24px' }}>
           <a style={{
@@ -356,7 +388,7 @@ const AppContent: React.FC = () => {
           href="#"
           onMouseEnter={(e) => e.currentTarget.style.color = '#2563EB'}
           onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}>
-            API Status
+            Trạng Thái API
           </a>
           <a style={{
             color: '#6B7280',
@@ -369,7 +401,7 @@ const AppContent: React.FC = () => {
           href="#"
           onMouseEnter={(e) => e.currentTarget.style.color = '#2563EB'}
           onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}>
-            Documentation
+            Tài Liệu
           </a>
           <a style={{
             color: '#6B7280',
@@ -382,7 +414,7 @@ const AppContent: React.FC = () => {
           href="#"
           onMouseEnter={(e) => e.currentTarget.style.color = '#2563EB'}
           onMouseLeave={(e) => e.currentTarget.style.color = '#6B7280'}>
-            Support
+            Hỗ Trợ
           </a>
         </div>
       </footer>

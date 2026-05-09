@@ -44,14 +44,14 @@ const Dashboard: React.FC = () => {
         fontSize: '14px',
         color: '#6B7280'
       }}>
-        Loading data...
+        Đang tải dữ liệu...
       </div>
     );
   }
 
   if (!stats) return (
     <div style={{ padding: '32px', fontFamily: 'Inter, sans-serif', color: '#6B7280' }}>
-      No data available
+      Không có dữ liệu
     </div>
   );
 
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
                 cursor: 'pointer',
                 height: '36px'
               }}>
-                Export Data
+                Xuất Dữ Liệu
               </button>
               <button style={{
                 backgroundColor: '#1E3A5F',
@@ -110,7 +110,7 @@ const Dashboard: React.FC = () => {
                 cursor: 'pointer',
                 height: '36px'
               }}>
-                Refresh
+                Làm Mới
               </button>
             </div>
           </div>
@@ -121,7 +121,7 @@ const Dashboard: React.FC = () => {
             color: '#6B7280',
             margin: 0
           }}>
-            Real-time analytics of Vietnamese IT recruitment market
+            Phân tích thời gian thực về thị trường tuyển dụng IT Việt Nam
           </p>
         </div>
 
@@ -148,7 +148,7 @@ const Dashboard: React.FC = () => {
               letterSpacing: '0.05em',
               marginBottom: '8px'
             }}>
-              TOTAL JOBS
+              TỔNG SỐ VIỆC LÀM
             </div>
             <div style={{ 
               fontFamily: 'Noto Serif, serif',
@@ -168,7 +168,7 @@ const Dashboard: React.FC = () => {
               padding: '4px 10px',
               borderRadius: '2px'
             }}>
-              Active
+              Đang Hoạt Động
             </div>
           </div>
 
@@ -188,7 +188,7 @@ const Dashboard: React.FC = () => {
               letterSpacing: '0.05em',
               marginBottom: '8px'
             }}>
-              TOTAL COMPANIES
+              TỔNG SỐ CÔNG TY
             </div>
             <div style={{ 
               fontFamily: 'Noto Serif, serif',
@@ -208,7 +208,7 @@ const Dashboard: React.FC = () => {
               padding: '4px 10px',
               borderRadius: '2px'
             }}>
-              Verified
+              Đã Xác Minh
             </div>
           </div>
 
@@ -228,7 +228,7 @@ const Dashboard: React.FC = () => {
               letterSpacing: '0.05em',
               marginBottom: '8px'
             }}>
-              LOCATIONS
+              ĐỊA ĐIỂM
             </div>
             <div style={{ 
               fontFamily: 'Noto Serif, serif',
@@ -248,7 +248,7 @@ const Dashboard: React.FC = () => {
               padding: '4px 10px',
               borderRadius: '2px'
             }}>
-              Nationwide
+              Toàn Quốc
             </div>
           </div>
 
@@ -268,7 +268,7 @@ const Dashboard: React.FC = () => {
               letterSpacing: '0.05em',
               marginBottom: '8px'
             }}>
-              UNIQUE SKILLS
+              KỸ NĂNG ĐỘC NHẤT
             </div>
             <div style={{ 
               fontFamily: 'Noto Serif, serif',
@@ -288,7 +288,7 @@ const Dashboard: React.FC = () => {
               padding: '4px 10px',
               borderRadius: '2px'
             }}>
-              Tracked
+              Đang Theo Dõi
             </div>
           </div>
         </div>
@@ -321,7 +321,7 @@ const Dashboard: React.FC = () => {
                 color: '#1E3A5F',
                 margin: 0
               }}>
-                Top 15 Skills in Demand
+                Top 15 Kỹ Năng Được Yêu Cầu Nhiều Nhất
               </h3>
             </div>
             <div style={{ padding: '16px' }}>
@@ -394,7 +394,7 @@ const Dashboard: React.FC = () => {
                 color: '#1E3A5F',
                 margin: 0
               }}>
-                Job Level Distribution
+                Phân Bổ Cấp Bậc Công Việc
               </h3>
             </div>
             <div style={{ padding: '24px 16px' }}>
@@ -465,7 +465,7 @@ const Dashboard: React.FC = () => {
               color: '#1E3A5F',
               margin: 0
             }}>
-              Top 10 Locations
+              Top 10 Địa Điểm
             </h3>
           </div>
           <div style={{ padding: '0' }}>
@@ -488,7 +488,7 @@ const Dashboard: React.FC = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em'
                   }}>
-                    LOCATION
+                    ĐỊA ĐIỂM
                   </th>
                   <th style={{ 
                     padding: '12px 16px',
@@ -499,7 +499,7 @@ const Dashboard: React.FC = () => {
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em'
                   }}>
-                    JOB COUNT
+                    SỐ LƯỢNG VIỆC
                   </th>
                   <th style={{ 
                     padding: '12px 16px',
@@ -511,7 +511,7 @@ const Dashboard: React.FC = () => {
                     letterSpacing: '0.05em',
                     width: '50%'
                   }}>
-                    DISTRIBUTION
+                    PHÂN BỐ
                   </th>
                 </tr>
               </thead>
@@ -595,15 +595,15 @@ const Dashboard: React.FC = () => {
               color: '#1E3A5F',
               marginBottom: '4px'
             }}>
-              Data Updated Daily
+              Dữ Liệu Được Cập Nhật Hàng Ngày
             </div>
             <div style={{ 
               fontSize: '13px',
               color: '#6B7280',
               lineHeight: '20px'
             }}>
-              This dashboard aggregates job postings from major Vietnamese IT recruitment platforms. 
-              Data is refreshed every 24 hours to ensure accuracy and relevance.
+              Dashboard này tổng hợp các tin tuyển dụng từ các nền tảng tuyển dụng IT lớn tại Việt Nam. 
+              Dữ liệu được làm mới mỗi 24 giờ để đảm bảo độ chính xác và phù hợp.
             </div>
           </div>
         </div>
