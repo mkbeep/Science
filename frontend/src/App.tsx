@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
 import Dashboard from './pages/Dashboard';
@@ -6,9 +6,26 @@ import Analytics from './pages/Analytics';
 import JobSearch from './pages/JobSearch';
 import Trends from './pages/Trends';
 import SkillNetwork from './pages/SkillNetwork';
+import { RealtimeProvider, useRealtime } from './realtime/RealtimeProvider';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
+  const { connected, lastBanner, dismissBanner } = useRealtime();
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+      return;
+    }
+    try {
+      if (sessionStorage.getItem('it_jobs_notif_prompted')) return;
+      sessionStorage.setItem('it_jobs_notif_prompted', '1');
+      if (Notification.permission === 'default') {
+        void Notification.requestPermission();
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -44,6 +61,41 @@ const AppContent: React.FC = () => {
           }}>
             Việc Làm IT Việt Nam
           </span>
+          <div
+            title={connected ? 'WebSocket đã kết nối' : 'Không kết nối tới server realtime'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '4px 10px',
+              borderRadius: '999px',
+              backgroundColor: 'rgba(15, 23, 42, 0.35)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+            }}
+          >
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '9999px',
+                backgroundColor: connected ? '#34D399' : '#FBBF24',
+                boxShadow: connected
+                  ? '0 0 0 2px rgba(52, 211, 153, 0.35)'
+                  : '0 0 0 2px rgba(251, 191, 36, 0.35)',
+              }}
+            />
+            <span
+              style={{
+                color: 'rgba(255, 255, 255, 0.85)',
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {connected ? 'Live' : 'Offline'}
+            </span>
+          </div>
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -111,6 +163,53 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {lastBanner && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '64px',
+            left: '260px',
+            right: 0,
+            zIndex: 45,
+            padding: '12px 32px',
+            backgroundColor: '#ECFDF5',
+            borderBottom: '1px solid #A7F3D0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, color: '#064E3B', fontSize: '14px' }}>
+              {lastBanner.title}
+            </div>
+            {lastBanner.body && (
+              <div style={{ color: '#047857', fontSize: '13px', marginTop: '4px' }}>
+                {lastBanner.body}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => dismissBanner()}
+            style={{
+              border: '1px solid #047857',
+              backgroundColor: '#FFFFFF',
+              color: '#047857',
+              borderRadius: '4px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            Đã xem
+          </button>
+        </div>
+      )}
 
       {/* Side NavBar - CorpScale Style */}
       <aside style={{
@@ -425,7 +524,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Router>
-      <AppContent />
+      <RealtimeProvider>
+        <AppContent />
+      </RealtimeProvider>
     </Router>
   );
 };

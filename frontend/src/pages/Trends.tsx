@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { getTechnologies } from '../api/api';
 import { Technologies, TechnologyData } from '../types';
+import { useRealtime } from '../realtime/RealtimeProvider';
 
 const Trends: React.FC = () => {
   const [techData, setTechData] = useState<Technologies | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const { refreshEpoch } = useRealtime();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async (): Promise<void> => {
+  const loadData = useCallback(async (): Promise<void> => {
     try {
+      setLoading(true);
       const res = await getTechnologies();
       setTechData(res.data);
       setLoading(false);
@@ -20,7 +19,11 @@ const Trends: React.FC = () => {
       console.error('Error loading technologies:', error);
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [refreshEpoch, loadData]);
 
   const createChartData = (data: TechnologyData[], color: string) => ({
     labels: data.map(d => d.skill),

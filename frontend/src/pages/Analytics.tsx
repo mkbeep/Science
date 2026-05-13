@@ -3,6 +3,7 @@ import { Bar, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { compareCities, getAIMLStats, getTopCompanies, getTechnicalSkills, getJobsTrend, getAITrend, getSkillsTrend, getTrendsSummary } from '../api/api';
 import { CitiesComparison, AIMLStats, Company, Skill, TrendDataPoint, AITrendDataPoint, SkillTrendDataPoint, TrendSummary } from '../types';
+import { useRealtime } from '../realtime/RealtimeProvider';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
@@ -21,16 +22,20 @@ const Analytics: React.FC = () => {
   const [trendSummary, setTrendSummary] = useState<TrendSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [trendDays, setTrendDays] = useState<number>(30);
+  const { refreshEpoch } = useRealtime();
 
+  // Intentionally refresh dashboards when crawler pushes a new epoch.
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     loadData();
-  }, []);
+  }, [refreshEpoch]);
 
   useEffect(() => {
     if (activeTab === 'trends') {
       loadTrendData();
     }
-  }, [activeTab, trendDays]);
+  }, [activeTab, trendDays, refreshEpoch]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const loadData = async (): Promise<void> => {
     try {

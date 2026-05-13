@@ -10,6 +10,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import axios from 'axios';
+import { useRealtime } from '../realtime/RealtimeProvider';
 
 interface SkillNode {
   name: string;
@@ -35,13 +36,17 @@ const SkillNetwork: React.FC = () => {
   const [searchSkill, setSearchSkill] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
+  const { refreshEpoch } = useRealtime();
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     loadNetworkData();
-  }, []);
+  }, [refreshEpoch]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const loadNetworkData = async () => {
     try {
+      setLoading(true);
       const response = await axios.get('http://localhost:5001/api/skills/network?top_skills=30&min_connection=3');
       const data: NetworkData = response.data;
       setAllNetworkData(data);

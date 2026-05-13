@@ -5,17 +5,28 @@ Chạy mỗi 6 giờ để cập nhật dữ liệu real-time
 
 import schedule
 import time
+import traceback
 from datetime import datetime
+
+from alerting import notify_webhook
 from realtime_crawler import run_realtime_crawl
+
 
 def job():
     """Wrapper function for scheduled job"""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print(f"⏰ Scheduled crawl triggered at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*70 + "\n")
-    run_realtime_crawl()
-    print(f"\n⏰ Next crawl in 6 hours...")
-    print()
+    print("=" * 70 + "\n")
+    try:
+        run_realtime_crawl()
+    except Exception:
+        traceback.print_exc()
+        notify_webhook(
+            "Scheduled crawl raised an unexpected exception (check logs)",
+            severity="error",
+            extra={"traceback": traceback.format_exc()[:4000]},
+        )
+    print("\n⏰ Next crawl in 6 hours...\n")
 
 # Schedule: Chạy mỗi 6 giờ
 schedule.every(6).hours.do(job)

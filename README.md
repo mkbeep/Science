@@ -20,3 +20,4 @@ source venv/bin/activate && python3 api.py
 // chạy tự đọng 24/7
 cd Science
 ./START_REALTIME_CRAWLER.sh
+

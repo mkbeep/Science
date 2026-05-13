@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { searchJobs, getFilters } from '../api/api';
 import { Job, Filters, SearchParams } from '../types';
+import { useRealtime } from '../realtime/RealtimeProvider';
 
 const JobSearch: React.FC = () => {
   const [filters, setFilters] = useState<SearchParams>({ skill: '', location: '', level: '' });
@@ -8,10 +9,11 @@ const JobSearch: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]); // Khởi tạo với array rỗng thay vì undefined
   const [loading, setLoading] = useState<boolean>(false);
   const [searched, setSearched] = useState<boolean>(false);
+  const { refreshEpoch } = useRealtime();
 
   useEffect(() => {
     loadFilters();
-  }, []);
+  }, [refreshEpoch]);
 
   const loadFilters = async (): Promise<void> => {
     try {

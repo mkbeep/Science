@@ -3,15 +3,56 @@ IT JOBS VIETNAM - REST API
 Flask backend API for React frontend
 """
 
+import os
+import sqlite3
+import threading
+import unicodedata
+from collections import Counter
+
+import pandas as pd
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import sqlite3
-import pandas as pd
-from collections import Counter
-import unicodedata
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_socketio import SocketIO
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
+
+_cors_origins_env = os.environ.get(
+    'SOCKETIO_CORS_ORIGINS',
+    'http://127.0.0.1:3000,http://localhost:3000,*',
+)
+_cors_origins = [x.strip() for x in _cors_origins_env.split(',') if x.strip()]
+
+socketio = SocketIO(app, cors_allowed_origins=_cors_origins, async_mode='threading')
+
+_ws_lock = threading.Lock()
+_ws_connections = 0
+
+CRAWL_NOTIFY_SECRET = os.environ.get('CRAWL_NOTIFY_SECRET', '').strip()
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    storage_uri=os.environ.get('RATE_LIMIT_STORAGE_URI', 'memory://'),
+    default_limits=['300 per minute'],
+    headers_enabled=True,
+)
+
+
+@socketio.on('connect')
+def _ws_on_connect(_auth=None):
+    global _ws_connections
+    with _ws_lock:
+        _ws_connections += 1
+
+
+@socketio.on('disconnect')
+def _ws_on_disconnect():
+    global _ws_connections
+    with _ws_lock:
+        _ws_connections = max(0, _ws_connections - 1)
 
 # Helper function to normalize Vietnamese text
 def normalize_text(text):
@@ -60,9 +101,97 @@ def load_data_from_db():
 # ============================================================================
 
 @app.route('/api/health', methods=['GET'])
+@limiter.exempt
 def health_check():
-    """Health check endpoint"""
-    return jsonify({'status': 'ok', 'message': 'API is running'})
+    """Health check endpoint (REST + SQLite reachability)."""
+    api_ok = True
+    db_reachable = False
+    websocket_clients = 0
+    with _ws_lock:
+        websocket_clients = _ws_connections
+    try:
+        conn = get_db()
+        conn.cursor().execute('SELECT 1')
+        conn.close()
+        db_reachable = True
+    except sqlite3.Error:
+        db_reachable = False
+
+    overall = api_ok and db_reachable
+    return jsonify(
+        {
+            'status': 'ok' if overall else 'degraded',
+            'api': 'ok' if api_ok else 'down',
+            'database': 'ok' if db_reachable else 'unreachable',
+            'websocket_clients': websocket_clients,
+        },
+    )
+
+
+@app.route('/api/monitoring/status', methods=['GET'])
+@limiter.exempt
+def monitoring_status():
+    """Last crawl record + websocket fan-out (operators / Grafana-style polling)."""
+    with _ws_lock:
+        websocket_clients = _ws_connections
+
+    crawl = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            '''
+            SELECT name FROM sqlite_master
+            WHERE type='table' AND name='crawl_runs'
+            ''',
+        )
+        if cur.fetchone():
+            cur.execute(
+                '''
+                SELECT started_at, finished_at, status, jobs_crawled,
+                       new_jobs, updated_jobs, skipped_duplicates, error_message
+                FROM crawl_runs
+                ORDER BY id DESC LIMIT 1
+                ''',
+            )
+            row = cur.fetchone()
+            if row:
+                crawl = {
+                    'started_at': row[0],
+                    'finished_at': row[1],
+                    'status': row[2],
+                    'jobs_crawled': row[3],
+                    'new_jobs': row[4],
+                    'updated_jobs': row[5],
+                    'skipped_duplicates': row[6],
+                    'error_message': row[7],
+                }
+        conn.close()
+    except sqlite3.Error as e:
+        return jsonify({'error': str(e), 'websocket_clients': websocket_clients}), 500
+
+    return jsonify(
+        {
+            'websocket_clients': websocket_clients,
+            'last_crawl': crawl,
+            'secret_configured': bool(CRAWL_NOTIFY_SECRET),
+        },
+    )
+
+
+@app.route('/api/internal/crawl-complete', methods=['POST'])
+@limiter.exempt
+def internal_crawl_complete():
+    """Called by crawler to fan-out realtime messages to browsers."""
+    if CRAWL_NOTIFY_SECRET:
+        hdr = request.headers.get('X-Crawl-Secret', '')
+        if hdr != CRAWL_NOTIFY_SECRET:
+            return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json(silent=True) or {}
+    socketio.emit('crawl_update', payload)
+    with _ws_lock:
+        n = _ws_connections
+    return jsonify({'ok': True, 'websocket_clients': n})
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
@@ -968,4 +1097,10 @@ def get_new_jobs_trend():
 # ============================================================================
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    socketio.run(
+        app,
+        debug=os.environ.get('FLASK_DEBUG', '1') == '1',
+        host=os.environ.get('BIND_HOST', '0.0.0.0'),
+        port=int(os.environ.get('PORT', '5001')),
+        allow_unsafe_werkzeug=True,
+    )

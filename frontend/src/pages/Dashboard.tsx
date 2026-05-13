@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getStats, getTopSkills, getTopLocations, getJobLevels } from '../api/api';
 import { Stats, Skill, Location, JobLevel } from '../types';
+import { useRealtime } from '../realtime/RealtimeProvider';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -8,13 +9,11 @@ const Dashboard: React.FC = () => {
   const [topLocations, setTopLocations] = useState<Location[]>([]);
   const [jobLevels, setJobLevels] = useState<JobLevel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { refreshEpoch } = useRealtime();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async (): Promise<void> => {
+  const loadData = useCallback(async (): Promise<void> => {
     try {
+      setLoading(true);
       const [statsRes, skillsRes, locsRes, levelsRes] = await Promise.all([
         getStats(),
         getTopSkills(15),
@@ -31,7 +30,11 @@ const Dashboard: React.FC = () => {
       console.error('Error loading data:', error);
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [refreshEpoch, loadData]);
 
   if (loading) {
     return (
@@ -99,17 +102,21 @@ const Dashboard: React.FC = () => {
               }}>
                 Xuất Dữ Liệu
               </button>
-              <button style={{
-                backgroundColor: '#1E3A5F',
-                border: 'none',
-                borderRadius: '4px',
-                padding: '8px 14px',
-                fontSize: '13px',
-                fontWeight: '500',
-                color: '#FFFFFF',
-                cursor: 'pointer',
-                height: '36px'
-              }}>
+              <button
+                type="button"
+                style={{
+                  backgroundColor: '#1E3A5F',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '8px 14px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  height: '36px'
+                }}
+                onClick={() => void loadData()}
+              >
                 Làm Mới
               </button>
             </div>
