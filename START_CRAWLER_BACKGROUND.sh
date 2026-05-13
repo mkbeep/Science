@@ -2,6 +2,9 @@
 
 # Script để chạy crawler ở background (không cần treo terminal)
 
+# Save original directory
+ORIGINAL_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 cd "$(dirname "$0")/crawler"
 
 # Check if already running
@@ -22,8 +25,19 @@ fi
 echo "🚀 Starting Real-Time Crawler in background..."
 echo ""
 
+# Use absolute path to venv Python (from original directory, go up 1 level)
+VENV_PYTHON="$ORIGINAL_DIR/../venv/bin/python3"
+
+if [ -f "$VENV_PYTHON" ]; then
+    echo "✅ Using venv Python: $VENV_PYTHON"
+    PYTHON_CMD="$VENV_PYTHON"
+else
+    echo "⚠️  venv not found at $VENV_PYTHON, using system Python"
+    PYTHON_CMD="python3"
+fi
+
 # Start in background with nohup
-nohup python realtime_scheduler.py > /tmp/realtime_crawler.log 2>&1 &
+nohup "$PYTHON_CMD" realtime_scheduler.py > /tmp/realtime_crawler.log 2>&1 &
 PID=$!
 
 sleep 2

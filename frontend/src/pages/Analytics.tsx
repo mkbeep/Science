@@ -264,18 +264,18 @@ const Analytics: React.FC = () => {
                 letterSpacing: '0.05em',
                 marginBottom: '8px'
               }}>
-                TĂNG TRƯỞNG/NGÀY
+                JOB MỚI/NGÀY
               </div>
               <div style={{ 
                 fontFamily: 'Noto Serif, serif',
                 fontSize: '30px', 
                 fontWeight: 'bold',
-                color: trendSummary.growth_rate >= 0 ? '#10B981' : '#EF4444'
+                color: '#10B981'
               }}>
-                {trendSummary.growth_rate >= 0 ? '+' : ''}{trendSummary.growth_rate}%
+                {trendSummary.today_new_jobs || 0}
               </div>
               <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
-                Hôm nay: {trendSummary.today_jobs} vs Hôm qua: {trendSummary.yesterday_jobs}
+                Hôm nay: {trendSummary.today_new_jobs || 0} vs Hôm qua: {trendSummary.yesterday_new_jobs || 0} jobs mới
               </div>
             </div>
 
@@ -294,7 +294,7 @@ const Analytics: React.FC = () => {
                 letterSpacing: '0.05em',
                 marginBottom: '8px'
               }}>
-                TĂNG TRƯỞNG/TUẦN
+                JOB MỚI/TUẦN
               </div>
               <div style={{ 
                 fontFamily: 'Noto Serif, serif',
@@ -305,7 +305,7 @@ const Analytics: React.FC = () => {
                 {trendSummary.weekly_growth_rate >= 0 ? '+' : ''}{trendSummary.weekly_growth_rate}%
               </div>
               <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
-                {trendSummary.last_week_avg.toFixed(0)} vs {trendSummary.prev_week_avg.toFixed(0)} jobs
+                Tuần này: {trendSummary.last_week_new_jobs} vs Tuần trước: {trendSummary.prev_week_new_jobs} jobs mới
               </div>
             </div>
 

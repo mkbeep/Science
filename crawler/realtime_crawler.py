@@ -261,20 +261,27 @@ def save_jobs_to_database(jobs):
     conn.close()
     
     print(f"✅ Saved to database: {new_jobs} new jobs, {updated_jobs} updated jobs")
+    
+    # Return counts for trend tracking
+    return {
+        'new_jobs': new_jobs,
+        'updated_jobs': updated_jobs
+    }
 
-def save_realtime_trend(date, counts):
+def save_realtime_trend(date, counts, save_stats):
     """Save real-time trend data to database"""
     
     db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'it_jobs_vietnam.db')
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    # Create table if not exists
+    # Create table if not exists - ADD new_jobs_today column
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS job_trends (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date DATE NOT NULL UNIQUE,
             total_jobs INTEGER NOT NULL,
+            new_jobs_today INTEGER DEFAULT 0,
             ai_ml_jobs INTEGER NOT NULL,
             data_analysis_jobs INTEGER NOT NULL,
             python_jobs INTEGER NOT NULL,
@@ -283,6 +290,12 @@ def save_realtime_trend(date, counts):
             is_simulated BOOLEAN DEFAULT 0
         )
     ''')
+    
+    # Check if column exists, if not add it
+    cursor.execute("PRAGMA table_info(job_trends)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'new_jobs_today' not in columns:
+        cursor.execute('ALTER TABLE job_trends ADD COLUMN new_jobs_today INTEGER DEFAULT 0')
     
     # Get TOTAL jobs in database (not just today's crawl)
     cursor.execute('SELECT COUNT(*) FROM jobs_realtime')
@@ -337,14 +350,18 @@ def save_realtime_trend(date, counts):
     ''')
     react_total = cursor.fetchone()[0]
     
-    # Insert or replace today's data with TOTAL counts
+    # Get new jobs count from save_stats
+    new_jobs_today = save_stats.get('new_jobs', 0)
+    
+    # Insert or replace today's data with TOTAL counts AND new jobs count
     cursor.execute('''
         INSERT OR REPLACE INTO job_trends 
-        (date, total_jobs, ai_ml_jobs, data_analysis_jobs, python_jobs, java_jobs, react_jobs, is_simulated)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+        (date, total_jobs, new_jobs_today, ai_ml_jobs, data_analysis_jobs, python_jobs, java_jobs, react_jobs, is_simulated)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
     ''', (
         date,
         total_jobs_in_db,
+        new_jobs_today,
         ai_ml_total,
         data_analysis_total,
         python_total,
@@ -356,7 +373,9 @@ def save_realtime_trend(date, counts):
     conn.close()
     
     print(f"✅ Updated trend data for {date}")
-    print(f"   Total in DB: {total_jobs_in_db} jobs (crawled today: {counts['total_jobs']} new/updated)")
+    print(f"   Total in DB: {total_jobs_in_db} jobs")
+    print(f"   New jobs today: {new_jobs_today} jobs")
+    print(f"   Updated jobs: {save_stats.get('updated_jobs', 0)} jobs")
 
 def run_realtime_crawl():
     """Run real-time crawl from VietnamWorks"""
@@ -391,13 +410,13 @@ def run_realtime_crawl():
         
         # Save detailed jobs to database (for Dashboard/Analytics)
         print(f"💾 Saving {len(jobs)} jobs to database...")
-        save_jobs_to_database(jobs)
+        save_stats = save_jobs_to_database(jobs)
         print()
         
         # Save trend data (for Trends page)
         today = datetime.now().strftime('%Y-%m-%d')
         print(f"💾 Saving trend data for {today}...")
-        save_realtime_trend(today, counts)
+        save_realtime_trend(today, counts, save_stats)
         print()
         
         print("=" * 70)

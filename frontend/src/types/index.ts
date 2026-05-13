@@ -120,7 +120,9 @@ export interface TrendSummary {
   growth_rate: number;  // Daily growth rate
   today_jobs: number;
   yesterday_jobs: number;
-  weekly_growth_rate: number;  // Weekly growth rate
-  last_week_avg: number;
-  prev_week_avg: number;
+  today_new_jobs: number;  // NEW: jobs added today
+  yesterday_new_jobs: number;  // NEW: jobs added yesterday
+  weekly_growth_rate: number;  // Weekly growth rate based on new jobs
+  last_week_new_jobs: number;  // Total new jobs this week
+  prev_week_new_jobs: number;  // Total new jobs last week
 }

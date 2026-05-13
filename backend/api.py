@@ -872,27 +872,45 @@ def get_trends_summary():
     if yesterday_jobs and yesterday_jobs > 0:
         growth_rate = round(((today_jobs - yesterday_jobs) / yesterday_jobs) * 100, 2)
     
-    # Get last 7 days average for comparison
+    # Get TOTAL NEW JOBS in last 7 days (this week)
     cursor.execute("""
-        SELECT AVG(total_jobs) as avg_jobs
+        SELECT SUM(new_jobs_today) as total_new_jobs
         FROM job_trends
         WHERE date >= date('now', '-7 days')
     """)
-    last_week_avg_result = cursor.fetchone()
-    last_week_avg = last_week_avg_result[0] if last_week_avg_result else 0
+    last_week_new_result = cursor.fetchone()
+    last_week_new_jobs = last_week_new_result[0] if last_week_new_result and last_week_new_result[0] else 0
+    
+    # Get TOTAL NEW JOBS in previous 7 days (last week)
+    cursor.execute("""
+        SELECT SUM(new_jobs_today) as total_new_jobs
+        FROM job_trends
+        WHERE date BETWEEN date('now', '-14 days') AND date('now', '-8 days')
+    """)
+    prev_week_new_result = cursor.fetchone()
+    prev_week_new_jobs = prev_week_new_result[0] if prev_week_new_result and prev_week_new_result[0] else 0
+    
+    # Calculate weekly growth rate based on NEW JOBS
+    weekly_growth_rate = 0
+    if prev_week_new_jobs and prev_week_new_jobs > 0:
+        weekly_growth_rate = round(((last_week_new_jobs - prev_week_new_jobs) / prev_week_new_jobs) * 100, 2)
+    
+    # Get new jobs today and yesterday
+    cursor.execute("""
+        SELECT new_jobs_today
+        FROM job_trends
+        WHERE date = date('now')
+    """)
+    today_new_result = cursor.fetchone()
+    today_new_jobs = today_new_result[0] if today_new_result and today_new_result[0] is not None else 0
     
     cursor.execute("""
-        SELECT AVG(total_jobs) as avg_jobs
+        SELECT new_jobs_today
         FROM job_trends
-        WHERE date BETWEEN date('now', '-14 days') AND date('now', '-7 days')
+        WHERE date = date('now', '-1 day')
     """)
-    prev_week_avg_result = cursor.fetchone()
-    prev_week_avg = prev_week_avg_result[0] if prev_week_avg_result else 0
-    
-    # Calculate weekly growth rate
-    weekly_growth_rate = 0
-    if prev_week_avg and prev_week_avg > 0:
-        weekly_growth_rate = round(((last_week_avg - prev_week_avg) / prev_week_avg) * 100, 2)
+    yesterday_new_result = cursor.fetchone()
+    yesterday_new_jobs = yesterday_new_result[0] if yesterday_new_result and yesterday_new_result[0] is not None else 0
     
     conn.close()
     
@@ -906,10 +924,40 @@ def get_trends_summary():
         'growth_rate': growth_rate,  # Daily growth rate
         'today_jobs': today_jobs,
         'yesterday_jobs': yesterday_jobs,
-        'weekly_growth_rate': weekly_growth_rate,  # Weekly growth rate
-        'last_week_avg': round(last_week_avg, 0) if last_week_avg else 0,
-        'prev_week_avg': round(prev_week_avg, 0) if prev_week_avg else 0
+        'today_new_jobs': today_new_jobs,  # NEW: jobs added today
+        'yesterday_new_jobs': yesterday_new_jobs,  # NEW: jobs added yesterday
+        'weekly_growth_rate': weekly_growth_rate,  # Weekly growth rate based on new jobs
+        'last_week_new_jobs': int(last_week_new_jobs),  # Total new jobs this week
+        'prev_week_new_jobs': int(prev_week_new_jobs)  # Total new jobs last week
     })
+
+@app.route('/api/trends/new-jobs', methods=['GET'])
+def get_new_jobs_trend():
+    """Get new jobs added each day"""
+    days = request.args.get('days', 30, type=int)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT date, new_jobs_today, total_jobs, is_simulated
+        FROM job_trends
+        ORDER BY date DESC
+        LIMIT ?
+    """, (days,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Reverse to get chronological order
+    data = [{
+        'date': row[0], 
+        'new_jobs': row[1] if row[1] is not None else 0,
+        'total_jobs': row[2],
+        'simulated': bool(row[3])
+    } for row in reversed(rows)]
+    
+    return jsonify(data)
 
 # ============================================================================
 # AI INSIGHTS ENDPOINTS

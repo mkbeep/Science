@@ -33,7 +33,7 @@ fi
 echo ""
 echo "📊 Database Status:"
 echo "-------------------"
-sqlite3 ../it_jobs_vietnam.db "SELECT date, total_jobs, ai_ml_jobs FROM job_trends ORDER BY date DESC LIMIT 5" 2>/dev/null || echo "Cannot read database"
+sqlite3 it_jobs_vietnam.db "SELECT date, total_jobs, ai_ml_jobs FROM job_trends ORDER BY date DESC LIMIT 5" 2>/dev/null || echo "Cannot read database"
 
 echo ""
 echo "📖 Commands:"
