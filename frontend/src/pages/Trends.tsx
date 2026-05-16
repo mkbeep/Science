@@ -3,6 +3,7 @@ import { Bar } from 'react-chartjs-2';
 import { getTechnologies } from '../api/api';
 import { Technologies, TechnologyData } from '../types';
 import { useRealtime } from '../realtime/RealtimeProvider';
+import '../App.css';
 
 const Trends: React.FC = () => {
   const [techData, setTechData] = useState<Technologies | null>(null);
@@ -12,11 +13,13 @@ const Trends: React.FC = () => {
   const loadData = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
+      console.log('[Trends] Loading technologies data...');
       const res = await getTechnologies();
+      console.log('[Trends] Technologies data received:', res.data);
       setTechData(res.data);
       setLoading(false);
     } catch (error) {
-      console.error('Error loading technologies:', error);
+      console.error('[Trends] Error loading technologies:', error);
       setLoading(false);
     }
   }, []);

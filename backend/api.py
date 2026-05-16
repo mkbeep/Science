@@ -96,6 +96,32 @@ def load_data_from_db():
     conn.close()
     return pd.read_csv('../clean_it_jobs.csv')
 
+
+def table_exists(conn, table_name: str) -> bool:
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    )
+    return cur.fetchone() is not None
+
+
+def column_exists(conn, table_name: str, column_name: str) -> bool:
+    cur = conn.cursor()
+    try:
+        cur.execute(f"PRAGMA table_info({table_name})")
+        return any(row[1] == column_name for row in cur.fetchall())
+    except sqlite3.Error:
+        return False
+
+
+def get_skill_column(conn, table_name: str) -> str:
+    return 'canonical_skill' if column_exists(conn, table_name, 'canonical_skill') else 'skill_name'
+
+
+def get_location_column(conn, table_name: str) -> str:
+    return 'canonical_location' if column_exists(conn, table_name, 'canonical_location') else 'location'
+
 # ============================================================================
 # ENDPOINTS
 # ============================================================================
@@ -274,7 +300,8 @@ def search_jobs():
     
     if location:
         location_normalized = normalize_text(location)
-        df['location_normalized'] = df['location'].apply(normalize_text)
+        location_source_col = 'canonical_location' if 'canonical_location' in df.columns else 'location'
+        df['location_normalized'] = df[location_source_col].apply(normalize_text)
         df = df[df['location_normalized'].str.contains(location_normalized, na=False)]
         print(f"[SEARCH] After location filter: {len(df)} jobs")
     
@@ -309,13 +336,15 @@ def get_top_skills():
     
     # Try jobs_realtime first
     try:
+        skill_col = get_skill_column(conn, 'job_skills_realtime')
         cursor.execute("""
-            SELECT skill_name, COUNT(*) as count
+            SELECT {skill_col}, COUNT(*) as count
             FROM job_skills_realtime
-            GROUP BY skill_name
+            WHERE {skill_col} IS NOT NULL AND TRIM({skill_col}) != ''
+            GROUP BY {skill_col}
             ORDER BY count DESC
             LIMIT ?
-        """, (limit,))
+        """.format(skill_col=skill_col), (limit,))
         skills = [{'skill': row[0], 'count': row[1]} for row in cursor.fetchall()]
         
         if len(skills) > 0:
@@ -326,13 +355,15 @@ def get_top_skills():
     
     # Fallback to old table
     try:
+        legacy_col = get_skill_column(conn, 'job_skills')
         cursor.execute("""
-            SELECT skill_name, COUNT(*) as count
+            SELECT {legacy_col}, COUNT(*) as count
             FROM job_skills
-            GROUP BY skill_name
+            WHERE {legacy_col} IS NOT NULL AND TRIM({legacy_col}) != ''
+            GROUP BY {legacy_col}
             ORDER BY count DESC
             LIMIT ?
-        """, (limit,))
+        """.format(legacy_col=legacy_col), (limit,))
         skills = [{'skill': row[0], 'count': row[1]} for row in cursor.fetchall()]
     except:
         skills = []
@@ -389,12 +420,15 @@ def get_technical_skills():
     except:
         table_name = 'job_skills'
     
+    skill_col = get_skill_column(conn, table_name)
+
     # Get all skills and filter technical ones
     try:
         cursor.execute(f"""
-            SELECT skill_name, COUNT(*) as count
+            SELECT {skill_col}, COUNT(*) as count
             FROM {table_name}
-            GROUP BY skill_name
+            WHERE {skill_col} IS NOT NULL AND TRIM({skill_col}) != ''
+            GROUP BY {skill_col}
             ORDER BY count DESC
         """)
         
@@ -427,7 +461,8 @@ def get_top_locations():
     limit = request.args.get('limit', 10, type=int)
     
     df = load_data_from_db()
-    top_locs = df['location'].value_counts().head(limit)
+    source_col = 'canonical_location' if 'canonical_location' in df.columns else 'location'
+    top_locs = df[source_col].fillna('').replace('', 'Unknown').value_counts().head(limit)
     
     locations = [{'location': loc, 'count': int(count)} 
                  for loc, count in top_locs.items()]
@@ -465,8 +500,9 @@ def compare_cities():
     conn = get_db()
     cursor = conn.cursor()
     
-    hanoi = df[df['location'] == 'Hà Nội']
-    hcm = df[df['location'] == 'Hồ Chí Minh']
+    location_col = 'canonical_location' if 'canonical_location' in df.columns else 'location'
+    hanoi = df[df[location_col] == 'Hà Nội']
+    hcm = df[df[location_col] == 'Hồ Chí Minh']
     
     # Define technical skills keywords (same as in get_technical_skills)
     technical_keywords = [
@@ -1087,6 +1123,161 @@ def get_new_jobs_trend():
     } for row in reversed(rows)]
     
     return jsonify(data)
+
+
+@app.route('/api/trends/emerging-skills', methods=['GET'])
+def get_emerging_skills():
+    """Top emerging skills by recent growth vs previous window."""
+    days = request.args.get('days', 14, type=int)
+    limit = request.args.get('limit', 15, type=int)
+
+    conn = get_db()
+    if not table_exists(conn, 'job_skills_realtime') or not table_exists(conn, 'jobs_realtime'):
+        conn.close()
+        return jsonify([])
+
+    skill_col = get_skill_column(conn, 'job_skills_realtime')
+    location_col = get_location_column(conn, 'jobs_realtime')
+    cursor = conn.cursor()
+    cursor.execute(
+        f"""
+        WITH recent AS (
+            SELECT js.{skill_col} AS skill, COUNT(*) AS cnt
+            FROM job_skills_realtime js
+            JOIN jobs_realtime j ON j.job_id = js.job_id
+            WHERE date(j.crawled_date) >= date('now', ?)
+              AND js.{skill_col} IS NOT NULL
+              AND TRIM(js.{skill_col}) != ''
+            GROUP BY js.{skill_col}
+        ),
+        previous AS (
+            SELECT js.{skill_col} AS skill, COUNT(*) AS cnt
+            FROM job_skills_realtime js
+            JOIN jobs_realtime j ON j.job_id = js.job_id
+            WHERE date(j.crawled_date) < date('now', ?)
+              AND date(j.crawled_date) >= date('now', ?)
+              AND js.{skill_col} IS NOT NULL
+              AND TRIM(js.{skill_col}) != ''
+            GROUP BY js.{skill_col}
+        )
+        SELECT
+            r.skill,
+            r.cnt AS recent_count,
+            COALESCE(p.cnt, 0) AS previous_count,
+            (r.cnt - COALESCE(p.cnt, 0)) AS delta
+        FROM recent r
+        LEFT JOIN previous p ON p.skill = r.skill
+        ORDER BY delta DESC, recent_count DESC
+        LIMIT ?
+        """,
+        (f'-{days} days', f'-{days} days', f'-{days * 2} days', limit),
+    )
+    rows = cursor.fetchall()
+
+    cursor.execute(
+        f"""
+        SELECT {location_col}, COUNT(*)
+        FROM jobs_realtime
+        GROUP BY {location_col}
+        ORDER BY COUNT(*) DESC
+        LIMIT 5
+        """
+    )
+    top_locations = [{'location': row[0] or 'Unknown', 'count': row[1]} for row in cursor.fetchall()]
+    conn.close()
+
+    return jsonify({
+        'window_days': days,
+        'skills': [
+            {
+                'skill': row[0],
+                'recent_count': int(row[1]),
+                'previous_count': int(row[2]),
+                'delta': int(row[3]),
+                'growth_rate': round((row[3] / row[2]) * 100, 2) if row[2] else None,
+            }
+            for row in rows
+        ],
+        'top_locations': top_locations,
+    })
+
+
+@app.route('/api/insights/data-quality', methods=['GET'])
+def get_data_quality_insights():
+    """Summarize completeness and dedupe quality from crawler outputs."""
+    conn = get_db()
+    cursor = conn.cursor()
+    has_quality = table_exists(conn, 'jobs_quality_scores')
+    has_jobs_rt = table_exists(conn, 'jobs_realtime')
+    if not has_jobs_rt:
+        # Fallback to jobs table
+        has_jobs_rt = table_exists(conn, 'jobs')
+        jobs_table = 'jobs'
+    else:
+        jobs_table = 'jobs_realtime'
+
+    cursor.execute(f"SELECT COUNT(*) FROM {jobs_table}")
+    total_jobs = int(cursor.fetchone()[0])
+
+    if has_quality:
+        cursor.execute(
+            """
+            SELECT
+                AVG(completeness_score),
+                AVG(dedupe_score),
+                AVG(quality_score)
+            FROM jobs_quality_scores
+            """
+        )
+        avg_row = cursor.fetchone() or (0, 0, 0)
+    else:
+        avg_row = (0, 0, 0)
+
+    # Check if canonical_location column exists
+    location_col = get_location_column(conn, jobs_table)
+    
+    cursor.execute(
+        f"""
+        SELECT COUNT(*)
+        FROM {jobs_table}
+        WHERE {location_col} IS NOT NULL AND TRIM({location_col}) != ''
+        """
+    )
+    canonicalized_locations = int(cursor.fetchone()[0])
+
+    if table_exists(conn, 'job_skills_realtime'):
+        skill_col = get_skill_column(conn, 'job_skills_realtime')
+        cursor.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM job_skills_realtime
+            WHERE {skill_col} IS NOT NULL AND TRIM({skill_col}) != ''
+            """
+        )
+        canonicalized_skills = int(cursor.fetchone()[0])
+    elif table_exists(conn, 'job_skills'):
+        skill_col = get_skill_column(conn, 'job_skills')
+        cursor.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM job_skills
+            WHERE {skill_col} IS NOT NULL AND TRIM({skill_col}) != ''
+            """
+        )
+        canonicalized_skills = int(cursor.fetchone()[0])
+    else:
+        canonicalized_skills = 0
+    conn.close()
+
+    return jsonify({
+        'total_jobs': total_jobs,
+        'avg_completeness_score': round(float(avg_row[0] or 0), 2),
+        'avg_dedupe_score': round(float(avg_row[1] or 0), 4),
+        'avg_quality_score': round(float(avg_row[2] or 0), 2),
+        'canonicalized_locations': canonicalized_locations,
+        'canonicalized_skills': canonicalized_skills,
+        'location_coverage_pct': round((canonicalized_locations / total_jobs) * 100, 2) if total_jobs else 0,
+    })
 
 # ============================================================================
 # AI INSIGHTS ENDPOINTS

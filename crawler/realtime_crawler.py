@@ -11,11 +11,39 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import hashlib
 import re
 import unicodedata
+from difflib import SequenceMatcher
 from datetime import datetime
 import sqlite3
 
 from alerting import notify_webhook
 from http_client import MIN_REQUEST_INTERVAL_SEC, TransientHTTPError, post_json_with_retries, post_notify
+
+SKILL_ALIASES = {
+    'js': 'javascript',
+    'javascript': 'javascript',
+    'ts': 'typescript',
+    'node': 'nodejs',
+    'node.js': 'nodejs',
+    'nodejs': 'nodejs',
+    'react.js': 'react',
+    'reactjs': 'react',
+    'py': 'python',
+    'postgres': 'postgresql',
+    'postgresql': 'postgresql',
+    'k8s': 'kubernetes',
+    'ml': 'machine learning',
+    'ai': 'ai',
+}
+
+LOCATION_ALIASES = {
+    'hcm': 'Hồ Chí Minh',
+    'ho chi minh': 'Hồ Chí Minh',
+    'tp hcm': 'Hồ Chí Minh',
+    'ho chi minh city': 'Hồ Chí Minh',
+    'ha noi': 'Hà Nội',
+    'hanoi': 'Hà Nội',
+    'da nang': 'Đà Nẵng',
+}
 
 
 def _normalize_dedupe_part(text: str) -> str:
@@ -36,6 +64,49 @@ def content_fingerprint(title: str, company: str, job_url: str = '') -> str:
         _normalize_dedupe_part(job_url),
     ))
     return hashlib.sha256(blob.encode('utf-8')).hexdigest()
+
+
+def canonicalize_skill(skill: str) -> str:
+    s = _normalize_dedupe_part(skill)
+    if not s:
+        return ''
+    return SKILL_ALIASES.get(s, s)
+
+
+def canonicalize_location(location: str) -> str:
+    s = _normalize_dedupe_part(location)
+    if not s:
+        return ''
+    return LOCATION_ALIASES.get(s, location.strip())
+
+
+def fuzzy_duplicate_score(job_a: dict, job_b: dict) -> float:
+    title_a = _normalize_dedupe_part(job_a.get('title', ''))
+    title_b = _normalize_dedupe_part(job_b.get('title', ''))
+    comp_a = _normalize_dedupe_part(job_a.get('company', ''))
+    comp_b = _normalize_dedupe_part(job_b.get('company', ''))
+    loc_a = _normalize_dedupe_part(job_a.get('canonical_location', job_a.get('location', '')))
+    loc_b = _normalize_dedupe_part(job_b.get('canonical_location', job_b.get('location', '')))
+
+    title_score = SequenceMatcher(None, title_a, title_b).ratio()
+    company_score = SequenceMatcher(None, comp_a, comp_b).ratio()
+    location_score = SequenceMatcher(None, loc_a, loc_b).ratio() if (loc_a and loc_b) else 0.5
+    return (0.6 * title_score) + (0.25 * company_score) + (0.15 * location_score)
+
+
+def compute_quality_score(job: dict) -> float:
+    score = 0.0
+    if job.get('title'):
+        score += 0.35
+    if job.get('company'):
+        score += 0.25
+    if job.get('canonical_location'):
+        score += 0.15
+    if job.get('canonical_skills'):
+        score += 0.2
+    if job.get('job_url'):
+        score += 0.05
+    return round(score * 100, 2)
 
 
 def crawl_vietnamworks():
@@ -74,6 +145,7 @@ def crawl_vietnamworks():
     all_jobs = []
     job_ids_seen = set()
     fingerprints_seen = set()
+    accepted_jobs = []
     
     print("📡 Crawling VietnamWorks...")
     print(f"🔍 Keywords: {len(keywords)}")
@@ -145,6 +217,9 @@ def crawl_vietnamworks():
                                     skill_name = skill.get("skillName", "")
                                     if skill_name:
                                         skills.append(skill_name)
+                        canonical_skills = sorted(
+                            {canonicalize_skill(s) for s in skills if canonicalize_skill(s)}
+                        )
                         
                         # Extract location
                         location = ""
@@ -152,6 +227,7 @@ def crawl_vietnamworks():
                         if locations_data and isinstance(locations_data, list) and len(locations_data) > 0:
                             if isinstance(locations_data[0], dict):
                                 location = locations_data[0].get("cityNameVI", "")
+                        canonical_location = canonicalize_location(location)
                         
                         job_data = {
                             "job_id": job_id,
@@ -159,12 +235,26 @@ def crawl_vietnamworks():
                             "company": raw_company or job.get("companyName", ""),
                             "job_level": job.get("jobLevel", ""),
                             "location": location,
+                            "canonical_location": canonical_location,
                             "skills": ", ".join(skills),
+                            "canonical_skills": ", ".join(canonical_skills),
                             "search_keyword": keyword,
                             "content_fingerprint": fp,
                             "job_url": raw_url,
                         }
+                        max_fuzzy = 0.0
+                        for prev in accepted_jobs[-300:]:
+                            fuzzy = fuzzy_duplicate_score(job_data, prev)
+                            if fuzzy > max_fuzzy:
+                                max_fuzzy = fuzzy
+                            if fuzzy >= 0.93:
+                                break
+                        if max_fuzzy >= 0.93:
+                            continue
+                        job_data["dedupe_score"] = round(max_fuzzy, 4)
+                        job_data["quality_score"] = compute_quality_score(job_data)
                         all_jobs.append(job_data)
+                        accepted_jobs.append(job_data)
                         
                     except Exception:
                         continue
@@ -227,6 +317,14 @@ def _ensure_jobs_realtime_extra_columns(cursor):
         cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN content_fingerprint TEXT')
     if 'job_url' not in columns:
         cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN job_url TEXT')
+    if 'canonical_location' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN canonical_location TEXT')
+    if 'canonical_skills' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN canonical_skills TEXT')
+    if 'dedupe_score' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN dedupe_score REAL')
+    if 'quality_score' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN quality_score REAL')
 
 
 def save_jobs_to_database(jobs):
@@ -258,7 +356,23 @@ def save_jobs_to_database(jobs):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             job_id TEXT,
             skill_name TEXT,
+            canonical_skill TEXT,
             FOREIGN KEY (job_id) REFERENCES jobs_realtime(job_id)
+        )
+        '''
+    )
+    cursor.execute('PRAGMA table_info(job_skills_realtime)')
+    skill_columns = [row[1] for row in cursor.fetchall()]
+    if 'canonical_skill' not in skill_columns:
+        cursor.execute('ALTER TABLE job_skills_realtime ADD COLUMN canonical_skill TEXT')
+    cursor.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS jobs_quality_scores (
+            job_id TEXT PRIMARY KEY,
+            completeness_score REAL DEFAULT 0,
+            dedupe_score REAL DEFAULT 0,
+            quality_score REAL DEFAULT 0,
+            updated_at TEXT NOT NULL
         )
         '''
     )
@@ -303,7 +417,8 @@ def save_jobs_to_database(jobs):
                 UPDATE jobs_realtime
                 SET title = ?, company = ?, location = ?, skills = ?,
                     job_level = ?, crawled_date = date('now'), search_keyword = ?,
-                    content_fingerprint = ?, job_url = ?
+                    content_fingerprint = ?, job_url = ?, canonical_location = ?,
+                    canonical_skills = ?, dedupe_score = ?, quality_score = ?
                 WHERE job_id = ?
                 ''',
                 (
@@ -315,6 +430,10 @@ def save_jobs_to_database(jobs):
                     job['search_keyword'],
                     fp or None,
                     job_url or None,
+                    job.get('canonical_location') or None,
+                    job.get('canonical_skills') or None,
+                    float(job.get('dedupe_score', 0.0)),
+                    float(job.get('quality_score', 0.0)),
                     jid,
                 ),
             )
@@ -324,8 +443,9 @@ def save_jobs_to_database(jobs):
                 '''
                 INSERT INTO jobs_realtime
                 (job_id, title, company, location, skills, job_level, crawled_date,
-                 search_keyword, content_fingerprint, job_url)
-                VALUES (?, ?, ?, ?, ?, ?, date('now'), ?, ?, ?)
+                 search_keyword, content_fingerprint, job_url, canonical_location,
+                 canonical_skills, dedupe_score, quality_score)
+                VALUES (?, ?, ?, ?, ?, ?, date('now'), ?, ?, ?, ?, ?, ?, ?)
                 ''',
                 (
                     jid,
@@ -337,6 +457,10 @@ def save_jobs_to_database(jobs):
                     job['search_keyword'],
                     fp or None,
                     job_url or None,
+                    job.get('canonical_location') or None,
+                    job.get('canonical_skills') or None,
+                    float(job.get('dedupe_score', 0.0)),
+                    float(job.get('quality_score', 0.0)),
                 ),
             )
             new_jobs += 1
@@ -348,11 +472,25 @@ def save_jobs_to_database(jobs):
             for skill in skills_list:
                 cursor.execute(
                     '''
-                    INSERT INTO job_skills_realtime (job_id, skill_name)
-                    VALUES (?, ?)
+                    INSERT INTO job_skills_realtime (job_id, skill_name, canonical_skill)
+                    VALUES (?, ?, ?)
                     ''',
-                    (jid, skill),
+                    (jid, skill, canonicalize_skill(skill)),
                 )
+        cursor.execute(
+            '''
+            INSERT OR REPLACE INTO jobs_quality_scores
+            (job_id, completeness_score, dedupe_score, quality_score, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ''',
+            (
+                jid,
+                float(job.get('quality_score', 0.0)),
+                float(job.get('dedupe_score', 0.0)),
+                float(job.get('quality_score', 0.0)),
+                datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            ),
+        )
 
     conn.commit()
     conn.close()

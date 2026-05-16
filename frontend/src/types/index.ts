@@ -126,3 +126,27 @@ export interface TrendSummary {
   last_week_new_jobs: number;  // Total new jobs this week
   prev_week_new_jobs: number;  // Total new jobs last week
 }
+
+export interface EmergingSkill {
+  skill: string;
+  recent_count: number;
+  previous_count: number;
+  delta: number;
+  growth_rate: number | null;
+}
+
+export interface EmergingSkillsResponse {
+  window_days: number;
+  skills: EmergingSkill[];
+  top_locations: Location[];
+}
+
+export interface DataQualityInsights {
+  total_jobs: number;
+  avg_completeness_score: number;
+  avg_dedupe_score: number;
+  avg_quality_score: number;
+  canonicalized_locations: number;
+  canonicalized_skills: number;
+  location_coverage_pct: number;
+}

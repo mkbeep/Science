@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { compareCities, getAIMLStats, getTopCompanies, getTechnicalSkills, getJobsTrend, getAITrend, getSkillsTrend, getTrendsSummary } from '../api/api';
-import { CitiesComparison, AIMLStats, Company, Skill, TrendDataPoint, AITrendDataPoint, SkillTrendDataPoint, TrendSummary } from '../types';
+import { compareCities, getAIMLStats, getTopCompanies, getTechnicalSkills, getJobsTrend, getAITrend, getSkillsTrend, getTrendsSummary, getEmergingSkills, getDataQualityInsights } from '../api/api';
+import { CitiesComparison, AIMLStats, Company, Skill, TrendDataPoint, AITrendDataPoint, SkillTrendDataPoint, TrendSummary, EmergingSkill, DataQualityInsights } from '../types';
 import { useRealtime } from '../realtime/RealtimeProvider';
 
 // Register Chart.js components
@@ -20,6 +20,8 @@ const Analytics: React.FC = () => {
   const [aiTrend, setAiTrend] = useState<AITrendDataPoint[]>([]);
   const [skillsTrend, setSkillsTrend] = useState<SkillTrendDataPoint[]>([]);
   const [trendSummary, setTrendSummary] = useState<TrendSummary | null>(null);
+  const [emergingSkills, setEmergingSkills] = useState<EmergingSkill[]>([]);
+  const [qualityInsights, setQualityInsights] = useState<DataQualityInsights | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [trendDays, setTrendDays] = useState<number>(30);
   const { refreshEpoch } = useRealtime();
@@ -59,19 +61,29 @@ const Analytics: React.FC = () => {
 
   const loadTrendData = async (): Promise<void> => {
     try {
-      const [jobsRes, aiRes, skillsRes, summaryRes] = await Promise.all([
+      console.log('[Analytics] Loading trend data for', trendDays, 'days...');
+      const [jobsRes, aiRes, skillsRes, summaryRes, emergingRes, qualityRes] = await Promise.all([
         getJobsTrend(trendDays),
         getAITrend(trendDays),
         getSkillsTrend(trendDays),
-        getTrendsSummary()
+        getTrendsSummary(),
+        getEmergingSkills(Math.max(14, trendDays), 10),
+        getDataQualityInsights(),
       ]);
+
+      console.log('[Analytics] Jobs trend data:', jobsRes.data);
+      console.log('[Analytics] AI trend data:', aiRes.data);
+      console.log('[Analytics] Skills trend data:', skillsRes.data);
+      console.log('[Analytics] Trend summary:', summaryRes.data);
 
       setJobsTrend(jobsRes.data);
       setAiTrend(aiRes.data);
       setSkillsTrend(skillsRes.data);
       setTrendSummary(summaryRes.data);
+      setEmergingSkills(emergingRes.data.skills || []);
+      setQualityInsights(qualityRes.data || null);
     } catch (error) {
-      console.error('Error loading trend data:', error);
+      console.error('[Analytics] Error loading trend data:', error);
     }
   };
 
@@ -100,15 +112,21 @@ const Analytics: React.FC = () => {
   }
 
   const renderTrendsTab = () => {
+    console.log('[Analytics] Rendering trends tab with data:', {
+      jobsTrend: jobsTrend.length,
+      aiTrend: aiTrend.length,
+      skillsTrend: skillsTrend.length
+    });
+
     // Jobs Trend Chart
     const jobsTrendData = {
-      labels: jobsTrend.map(d => {
+      labels: jobsTrend.length > 0 ? jobsTrend.map(d => {
         const date = new Date(d.date);
         return `${date.getDate()}/${date.getMonth() + 1}`;
-      }),
+      }) : [],
       datasets: [{
         label: 'Tổng Số Việc Làm',
-        data: jobsTrend.map(d => d.count),
+        data: jobsTrend.length > 0 ? jobsTrend.map(d => d.count) : [],
         borderColor: '#2563EB',
         backgroundColor: 'rgba(37, 99, 235, 0.1)',
         tension: 0.4,
@@ -120,14 +138,14 @@ const Analytics: React.FC = () => {
 
     // AI Trend Chart
     const aiTrendData = {
-      labels: aiTrend.map(d => {
+      labels: aiTrend.length > 0 ? aiTrend.map(d => {
         const date = new Date(d.date);
         return `${date.getDate()}/${date.getMonth() + 1}`;
-      }),
+      }) : [],
       datasets: [
         {
           label: 'AI/ML Jobs',
-          data: aiTrend.map(d => d.ai_jobs),
+          data: aiTrend.length > 0 ? aiTrend.map(d => d.ai_jobs) : [],
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           tension: 0.4,
@@ -136,7 +154,7 @@ const Analytics: React.FC = () => {
         },
         {
           label: 'Tỷ Lệ %',
-          data: aiTrend.map(d => d.percentage),
+          data: aiTrend.length > 0 ? aiTrend.map(d => d.percentage) : [],
           borderColor: '#F59E0B',
           backgroundColor: 'rgba(245, 158, 11, 0.1)',
           tension: 0.4,
@@ -148,35 +166,35 @@ const Analytics: React.FC = () => {
 
     // Skills Trend Chart
     const skillsTrendData = {
-      labels: skillsTrend.map(d => {
+      labels: skillsTrend.length > 0 ? skillsTrend.map(d => {
         const date = new Date(d.date);
         return `${date.getDate()}/${date.getMonth() + 1}`;
-      }),
+      }) : [],
       datasets: [
         {
           label: 'Python',
-          data: skillsTrend.map(d => d.Python),
+          data: skillsTrend.length > 0 ? skillsTrend.map(d => d.Python) : [],
           borderColor: '#3B82F6',
           tension: 0.4,
           fill: false,
         },
         {
           label: 'Java',
-          data: skillsTrend.map(d => d.Java),
+          data: skillsTrend.length > 0 ? skillsTrend.map(d => d.Java) : [],
           borderColor: '#EF4444',
           tension: 0.4,
           fill: false,
         },
         {
           label: 'React',
-          data: skillsTrend.map(d => d.React),
+          data: skillsTrend.length > 0 ? skillsTrend.map(d => d.React) : [],
           borderColor: '#06B6D4',
           tension: 0.4,
           fill: false,
         },
         {
           label: 'Data Analysis',
-          data: skillsTrend.map(d => d['Data Analysis']),
+          data: skillsTrend.length > 0 ? skillsTrend.map(d => d['Data Analysis']) : [],
           borderColor: '#8B5CF6',
           tension: 0.4,
           fill: false,
@@ -376,6 +394,86 @@ const Analytics: React.FC = () => {
           </div>
         )}
 
+        {/* Data quality + emerging skills */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1.1fr 1fr',
+          gap: '16px',
+          marginBottom: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          }}>
+            <h3 style={{
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              marginTop: 0,
+              marginBottom: '12px',
+            }}>
+              🚀 Emerging Skills ({Math.max(14, trendDays)} ngày)
+            </h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #E2E8F0', color: '#6B7280' }}>
+                  <th style={{ textAlign: 'left', padding: '8px 6px' }}>Skill</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px' }}>Delta</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px' }}>Growth</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emergingSkills.slice(0, 8).map((row, idx) => (
+                  <tr key={`${row.skill}-${idx}`} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '8px 6px', color: '#1E3A5F', fontWeight: 600 }}>{row.skill}</td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right', color: row.delta >= 0 ? '#059669' : '#DC2626', fontWeight: 600 }}>
+                      {row.delta >= 0 ? '+' : ''}{row.delta}
+                    </td>
+                    <td style={{ padding: '8px 6px', textAlign: 'right', color: '#6B7280' }}>
+                      {row.growth_rate === null ? 'new' : `${row.growth_rate >= 0 ? '+' : ''}${row.growth_rate.toFixed(1)}%`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p style={{ margin: '10px 0 0', fontSize: '12px', color: '#64748B' }}>
+              Insight: Skill tăng mạnh thường phản ánh nhu cầu tuyển dụng mới theo dự án hoặc làn sóng công nghệ.
+            </p>
+          </div>
+
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+          }}>
+            <h3 style={{
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              marginTop: 0,
+              marginBottom: '12px',
+            }}>
+              🧪 Data Quality
+            </h3>
+            <div style={{ fontSize: '13px', color: '#334155', lineHeight: 1.7 }}>
+              <div>Quality Score TB: <strong>{qualityInsights?.avg_quality_score ?? 0}</strong></div>
+              <div>Dedupe Score TB: <strong>{qualityInsights?.avg_dedupe_score ?? 0}</strong></div>
+              <div>Location chuẩn hóa: <strong>{qualityInsights?.location_coverage_pct ?? 0}%</strong></div>
+              <div>Skill đã chuẩn hóa: <strong>{qualityInsights?.canonicalized_skills ?? 0}</strong></div>
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: '12px', color: '#64748B' }}>
+              Data quality càng cao thì kết quả phân tích xu hướng càng đáng tin cậy cho năm 2026.
+            </p>
+          </div>
+        </div>
+
         {/* Jobs Trend Chart */}
         <div style={{
           backgroundColor: '#FFFFFF',
@@ -396,32 +494,38 @@ const Analytics: React.FC = () => {
           }}>
             📈 Xu Hướng Tổng Số Việc Làm
           </h2>
-          <Line data={jobsTrendData} options={{ 
-            responsive: true,
-            plugins: {
-              legend: {
-                display: true,
-                position: 'top' as const,
-              },
-              tooltip: {
-                mode: 'index' as const,
-                intersect: false,
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false,
-                grid: {
-                  color: '#F1F5F9'
+          {jobsTrend.length > 0 ? (
+            <Line data={jobsTrendData} options={{ 
+              responsive: true,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'top' as const,
+                },
+                tooltip: {
+                  mode: 'index' as const,
+                  intersect: false,
                 }
               },
-              x: {
-                grid: {
-                  display: false
+              scales: {
+                y: {
+                  beginAtZero: false,
+                  grid: {
+                    color: '#F1F5F9'
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  }
                 }
               }
-            }
-          }} />
+            }} />
+          ) : (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+              Đang tải dữ liệu xu hướng...
+            </div>
+          )}
         </div>
 
         {/* AI/ML Trend Chart */}
@@ -444,50 +548,56 @@ const Analytics: React.FC = () => {
           }}>
             🤖 Tăng Trưởng AI/ML Jobs
           </h2>
-          <Line data={aiTrendData} options={{ 
-            responsive: true,
-            interaction: {
-              mode: 'index' as const,
-              intersect: false,
-            },
-            plugins: {
-              legend: {
-                display: true,
-                position: 'top' as const,
-              }
-            },
-            scales: {
-              y: {
-                type: 'linear' as const,
-                display: true,
-                position: 'left' as const,
-                title: {
+          {aiTrend.length > 0 ? (
+            <Line data={aiTrendData} options={{ 
+              responsive: true,
+              interaction: {
+                mode: 'index' as const,
+                intersect: false,
+              },
+              plugins: {
+                legend: {
                   display: true,
-                  text: 'Số Lượng Jobs'
-                },
-                grid: {
-                  color: '#F1F5F9'
+                  position: 'top' as const,
                 }
               },
-              y1: {
-                type: 'linear' as const,
-                display: true,
-                position: 'right' as const,
-                title: {
+              scales: {
+                y: {
+                  type: 'linear' as const,
                   display: true,
-                  text: 'Tỷ Lệ %'
+                  position: 'left' as const,
+                  title: {
+                    display: true,
+                    text: 'Số Lượng Jobs'
+                  },
+                  grid: {
+                    color: '#F1F5F9'
+                  }
                 },
-                grid: {
-                  drawOnChartArea: false,
-                }
-              },
-              x: {
-                grid: {
-                  display: false
+                y1: {
+                  type: 'linear' as const,
+                  display: true,
+                  position: 'right' as const,
+                  title: {
+                    display: true,
+                    text: 'Tỷ Lệ %'
+                  },
+                  grid: {
+                    drawOnChartArea: false,
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  }
                 }
               }
-            }
-          }} />
+            }} />
+          ) : (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+              Đang tải dữ liệu xu hướng AI/ML...
+            </div>
+          )}
         </div>
 
         {/* Skills Trend Chart */}
@@ -509,32 +619,38 @@ const Analytics: React.FC = () => {
           }}>
             💻 Xu Hướng Nhu Cầu Công Nghệ
           </h2>
-          <Line data={skillsTrendData} options={{ 
-            responsive: true,
-            plugins: {
-              legend: {
-                display: true,
-                position: 'top' as const,
-              },
-              tooltip: {
-                mode: 'index' as const,
-                intersect: false,
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                grid: {
-                  color: '#F1F5F9'
+          {skillsTrend.length > 0 ? (
+            <Line data={skillsTrendData} options={{ 
+              responsive: true,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'top' as const,
+                },
+                tooltip: {
+                  mode: 'index' as const,
+                  intersect: false,
                 }
               },
-              x: {
-                grid: {
-                  display: false
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: '#F1F5F9'
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  }
                 }
               }
-            }
-          }} />
+            }} />
+          ) : (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+              Đang tải dữ liệu xu hướng công nghệ...
+            </div>
+          )}
         </div>
       </div>
     );

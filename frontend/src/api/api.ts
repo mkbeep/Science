@@ -14,7 +14,9 @@ import {
   TrendDataPoint,
   AITrendDataPoint,
   SkillTrendDataPoint,
-  TrendSummary
+  TrendSummary,
+  EmergingSkillsResponse,
+  DataQualityInsights
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:5001/api';
@@ -74,6 +76,15 @@ export const getSkillsTrend = (days = 30): Promise<AxiosResponse<SkillTrendDataP
 
 export const getTrendsSummary = (): Promise<AxiosResponse<TrendSummary>> => 
   api.get<TrendSummary>('/trends/summary');
+
+export const getEmergingSkills = (
+  days = 14,
+  limit = 15,
+): Promise<AxiosResponse<EmergingSkillsResponse>> =>
+  api.get<EmergingSkillsResponse>(`/trends/emerging-skills?days=${days}&limit=${limit}`);
+
+export const getDataQualityInsights = (): Promise<AxiosResponse<DataQualityInsights>> =>
+  api.get<DataQualityInsights>('/insights/data-quality');
 
 // AI Insights APIs
 export const fetchAIInsights = async () => {
