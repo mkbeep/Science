@@ -43,8 +43,21 @@ def parse_salary_text(salary_text: str) -> Dict[str, Optional[float]]:
     # Chuẩn hóa text
     text_lower = salary_text.lower()
     
-    # Kiểm tra "Thỏa thuận" hoặc "Negotiable"
-    if any(keyword in text_lower for keyword in ['thỏa thuận', 'thoả thuận', 'thương lượng', 'negotiable', 'competitive']):
+    # Kiểm tra "Thỏa thuận" / "Thương lượng" hoặc "Negotiable"
+    if any(keyword in text_lower for keyword in [
+        'thỏa thuận', 'thoả thuận', 'thương lượng', 'thuong luong',
+        'negotiable', 'competitive', 'salary negotiable'
+    ]):
+        return {
+            'min': None,
+            'max': None,
+            'currency': 'VND',
+            'unit': 'month',
+            'original': original
+        }
+    
+    # Skip non-salary text like "Lương tháng 13, 14" (bonus months, not salary amounts)
+    if re.match(r'^lương\s+tháng\s+\d', text_lower):
         return {
             'min': None,
             'max': None,
@@ -54,21 +67,37 @@ def parse_salary_text(salary_text: str) -> Dict[str, Optional[float]]:
         }
     
     # Xác định currency
+    # Lưu ý: VietnamWorks đôi khi hiển thị "$ 50tr-70tr" = VND (không phải USD)
+    # Nếu có 'tr' hoặc 'triệu' -> luôn là VND, dù có '$'
     currency = 'VND'
-    if 'usd' in text_lower or '$' in text_lower:
+    has_trieu_marker = bool(re.search(r'tr(?:iệu)?', text_lower))
+    if ('usd' in text_lower or '$' in text_lower) and not has_trieu_marker:
         currency = 'USD'
+
     
     # Xác định unit (month/year)
     unit = 'month'
     if any(keyword in text_lower for keyword in ['/năm', 'năm', '/year', 'yearly', 'per year', 'annually']):
         unit = 'year'
     
-    # Extract numbers - cẩn thận với format "30tr" (30 triệu)
-    # Pattern: tìm số (có thể có dấu phẩy hoặc chấm), có thể theo sau bởi "tr" (triệu)
-    # Ví dụ: "30tr", "30,000", "30.5", "2,000"
-    numbers = re.findall(r'(\d+(?:[.,]\d+)?)\s*(?:tr|triệu)?', salary_text, re.IGNORECASE)
+    # ===================================================================
+    # Extract numbers - xử lý cẩn thận các format:
+    #   "30tr", "30,000,000", "30.000.000", "30.5", "2,000", "15 - 25"
+    #
+    # Regex giải thích:
+    #   (\d{1,3}(?:[.,]\d{3})*  -> số có dấu phân cách hàng nghìn: 30,000,000
+    #   |                       -> hoặc
+    #   \d+(?:[.,]\d+)?         -> số thường hoặc số thập phân: 30, 30.5
+    #   )
+    #   \s*(tr(?:iệu)?)?        -> có thể theo sau bởi "tr" hoặc "triệu"
+    # ===================================================================
+    raw_matches = re.findall(
+        r'(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(tr(?:iệu)?)?',
+        salary_text,
+        re.IGNORECASE,
+    )
     
-    if not numbers:
+    if not raw_matches:
         return {
             'min': None,
             'max': None,
@@ -77,21 +106,89 @@ def parse_salary_text(salary_text: str) -> Dict[str, Optional[float]]:
             'original': original
         }
     
+    # Kiểm tra toàn cục: text có chứa "tr" hoặc "triệu" không?
+    has_trieu_in_text = bool(re.search(r'tr(?:iệu)?', text_lower))
+    
     # Convert to float
     parsed_numbers = []
-    for num in numbers:
+    for num_str, trieu_suffix in raw_matches:
         try:
-            # Replace comma with dot for decimal
-            num_clean = num.replace(',', '.')
-            value = float(num_clean)
+            # Xác định dấu phân cách: dấu phẩy hay dấu chấm là hàng nghìn?
+            # Nếu có pattern như "30,000,000" hoặc "30.000.000" -> hàng nghìn
+            # Nếu chỉ có 1 dấu và phần sau có 1-2 chữ số -> thập phân (vd: "30.5")
             
-            # Nếu số quá lớn (> 1000) và có "tr" hoặc "triệu" trong text gần đó
-            # thì đó là format "30000tr" (30 nghìn triệu) -> chia cho 1000
-            # Nhưng thường thì "30tr" = 30 triệu, không cần chia
-            # Chỉ chia nếu số > 1000 và không có "tr" trong text
-            if value > 1000 and ('tr' not in text_lower and 'triệu' not in text_lower):
-                # Có thể là format "30000" (30 nghìn) -> chia 1000 để thành 30 triệu
-                value = value / 1000
+            comma_count = num_str.count(',')
+            dot_count = num_str.count('.')
+            
+            if comma_count + dot_count == 0:
+                # Không có dấu phân cách -> số nguyên
+                value = float(num_str)
+            elif comma_count > 0 and dot_count == 0:
+                # Chỉ có dấu phẩy
+                # Kiểm tra xem có phải dấu phân cách hàng nghìn không
+                parts = num_str.split(',')
+                if all(len(p) == 3 for p in parts[1:]):
+                    # "30,000,000" hoặc "1,000" -> hàng nghìn
+                    value = float(num_str.replace(',', ''))
+                else:
+                    # "30,5" -> thập phân (European format)
+                    value = float(num_str.replace(',', '.'))
+            elif dot_count > 0 and comma_count == 0:
+                # Chỉ có dấu chấm
+                parts = num_str.split('.')
+                if all(len(p) == 3 for p in parts[1:]) and dot_count > 1:
+                    # "30.000.000" -> hàng nghìn (Vietnamese format)
+                    value = float(num_str.replace('.', ''))
+                elif all(len(p) == 3 for p in parts[1:]) and dot_count == 1:
+                    # Ambiguous: "1.000" could be 1000 or 1.0
+                    # Trong context lương VN, "1.000" thường = 1000
+                    # Nhưng "30.5" = 30.5 (thập phân)
+                    if len(parts[-1]) == 3 and len(parts[0]) >= 1:
+                        value = float(num_str.replace('.', ''))
+                    else:
+                        value = float(num_str)
+                else:
+                    # "30.5" -> thập phân
+                    value = float(num_str)
+            else:
+                # Có cả dấu chấm và dấu phẩy -> xử lý theo format cuối cùng
+                # "1,000.50" -> comma = nghìn, dot = thập phân
+                # "1.000,50" -> dot = nghìn, comma = thập phân
+                last_comma = num_str.rfind(',')
+                last_dot = num_str.rfind('.')
+                if last_comma > last_dot:
+                    # comma cuối -> comma là thập phân, dot là nghìn
+                    value = float(num_str.replace('.', '').replace(',', '.'))
+                else:
+                    # dot cuối -> dot là thập phân, comma là nghìn
+                    value = float(num_str.replace(',', ''))
+            
+            # ---------------------------------------------------------------
+            # Chuyển đổi sang đơn vị triệu VND (cho VND) hoặc giữ nguyên (USD)
+            # ---------------------------------------------------------------
+            is_trieu = bool(trieu_suffix)  # Số này có "tr"/"triệu" đi kèm không
+            
+            if currency == 'VND':
+                if is_trieu:
+                    # "30tr" = 30 triệu -> giữ nguyên = 30
+                    pass
+                elif has_trieu_in_text:
+                    # Có "triệu" trong text nhưng không gắn liền số này
+                    # vd: "15 - 25 triệu VND" -> 15 và 25 đều là triệu
+                    pass
+                else:
+                    # Không có "tr"/"triệu" trong text
+                    # Phải đoán: nếu số lớn -> có thể là VND thô
+                    if value >= 1_000_000:
+                        # "30000000" = 30 triệu
+                        value = value / 1_000_000
+                    elif value >= 1_000:
+                        # "30000" = 30 nghìn? Khó xác định, nhưng trong context
+                        # lương IT VN thường > 1 triệu, nên:
+                        # - "30000" -> có thể là 30 triệu (nhập sai format)
+                        # Giữ nguyên và để downstream xử lý
+                        value = value / 1_000
+            # USD: giữ nguyên (không chia), vd: 2000 USD = 2000
             
             parsed_numbers.append(value)
         except ValueError:
@@ -174,45 +271,86 @@ def normalize_salary(
     # Check if negotiable
     if salary_text:
         text_lower = salary_text.lower()
-        if any(keyword in text_lower for keyword in ['thỏa thuận', 'thoả thuận', 'negotiable', 'competitive']):
+        if any(keyword in text_lower for keyword in [
+            'thỏa thuận', 'thoả thuận', 'thương lượng', 'thuong luong',
+            'negotiable', 'competitive', 'salary negotiable'
+        ]):
             result['is_negotiable'] = True
             return result
     
-    # Priority 1: Use API values if available
-    if api_min is not None or api_max is not None:
-        # API values từ VietnamWorks thường là triệu VND/tháng
-        result['salary_min_monthly'] = api_min
-        result['salary_max_monthly'] = api_max
-        result['salary_currency'] = 'VND'
-        return result
-    
-    # Priority 2: Parse from salary_text
+    # Priority 1: Parse từ salary_text (prettySalary) - chính xác nhất vì có đơn vị rõ ràng
     if salary_text:
         parsed = parse_salary_text(salary_text)
-        
         min_val = parsed['min']
         max_val = parsed['max']
         currency = parsed['currency']
         unit = parsed['unit']
         
-        # Convert to monthly if yearly
-        if unit == 'year':
-            if min_val is not None:
-                min_val = min_val / 12
-            if max_val is not None:
-                max_val = max_val / 12
+        # Nếu parse được giá trị -> dùng ngay
+        if min_val is not None or max_val is not None:
+            # Bỏ qua JPY / Yên Nhật (¥)
+            if '¥' in salary_text or 'jpy' in salary_text.lower():
+                pass  # fall through to api values
+            else:
+                # Convert to monthly if yearly
+                if unit == 'year':
+                    if min_val is not None:
+                        min_val = min_val / 12
+                    if max_val is not None:
+                        max_val = max_val / 12
+
+                # Sanity check: lọc outliers do parse sai đơn vị
+                # VND thực tế: 0.3tr - 200tr/tháng | USD: $50 - $30,000/tháng
+                def _in_range(v, curr):
+                    if v is None:
+                        return True
+                    return (0.3 <= v <= 200) if curr == 'VND' else (50 <= v <= 30_000)
+
+                if _in_range(min_val, currency) and _in_range(max_val, currency):
+                    result['salary_min_monthly'] = min_val
+                    result['salary_max_monthly'] = max_val
+                    result['salary_currency'] = currency
+                    return result
+                # else: giá trị bất hợp lý -> fall through to api values
+
+
+    
+    # Priority 2: Fallback - dùng API values (api_min/api_max) khi text không parse được
+    # VietnamWorks API: salaryMin/salaryMax là VND thô (e.g. 15000000) hoặc USD (e.g. 1000)
+    if api_min is not None or api_max is not None:
+        def _to_million_vnd(val):
+            """Chuyển VND thô -> triệu VND."""
+            if val is None:
+                return None
+            if val >= 1_000_000:
+                return round(val / 1_000_000, 2)  # 15000000 -> 15.0
+            elif val >= 1_000:
+                return round(val / 1_000, 2)       # 15000 -> 15.0
+            else:
+                return val                          # 15 -> 15 (đã là triệu)
         
-        result['salary_min_monthly'] = min_val
-        result['salary_max_monthly'] = max_val
-        result['salary_currency'] = currency
+        # Detect USD: có '$' hoặc 'usd' trong text VÀ không có 'tr'/'triệu' (vì '$50tr' là VND)
+        text_lower = (salary_text or '').lower()
+        has_dollar_or_usd = ('usd' in text_lower or '$' in text_lower)
+        has_trieu = bool(re.search(r'tr(?:iệu)?', text_lower))
+        is_usd_job = has_dollar_or_usd and not has_trieu
         
+        if is_usd_job:
+            result['salary_min_monthly'] = api_min
+            result['salary_max_monthly'] = api_max
+            result['salary_currency'] = 'USD'
+        else:
+            result['salary_min_monthly'] = _to_million_vnd(api_min)
+            result['salary_max_monthly'] = _to_million_vnd(api_max)
+            result['salary_currency'] = 'VND'
         return result
     
-    # Priority 3: Use provided min/max (fallback)
+    # Priority 3: Use provided min/max (fallback cuối)
     result['salary_min_monthly'] = salary_min
     result['salary_max_monthly'] = salary_max
     
     return result
+
 
 
 def format_salary_display(
@@ -318,6 +456,14 @@ if __name__ == '__main__':
         "Competitive salary",
         "25 triệu VND/tháng",
         "300 triệu/năm",
+        # New test cases for bug fixes
+        "Tới 30tr ₫/tháng",
+        "50tr-70tr ₫/tháng",
+        "30,000,000 - 50,000,000 VND",
+        "30.000.000 - 50.000.000 VND",
+        "30000000",
+        "1,000 - 2,000 USD",
+        "$2,500 - $3,500",
     ]
     
     print("\n[TEST 1] Parse salary text:")

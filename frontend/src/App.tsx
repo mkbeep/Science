@@ -6,6 +6,7 @@ import Analytics from './pages/Analytics';
 import JobSearch from './pages/JobSearch';
 import Trends from './pages/Trends';
 import SkillNetwork from './pages/SkillNetwork';
+import Salary from './pages/Salary';
 import { RealtimeProvider, useRealtime } from './realtime/RealtimeProvider';
 
 const AppContent: React.FC = () => {
@@ -394,6 +395,36 @@ const AppContent: React.FC = () => {
             <span style={{ fontSize: '20px' }}>🔗</span>
             <span>Skill Network</span>
           </Link>
+
+          <Link 
+            to="/salary" 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '8px 16px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.15s ease',
+              backgroundColor: isActive('/salary') ? '#EFF6FF' : 'transparent',
+              color: isActive('/salary') ? '#1E3A5F' : '#6B7280',
+              borderLeft: isActive('/salary') ? '2px solid #1E3A5F' : '2px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive('/salary')) {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive('/salary')) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>💰</span>
+            <span>Phân Tích Lương</span>
+          </Link>
         </nav>
 
         <div style={{ 
@@ -453,6 +484,7 @@ const AppContent: React.FC = () => {
           <Route path="/search" element={<JobSearch />} />
           <Route path="/trends" element={<Trends />} />
           <Route path="/skill-network" element={<SkillNetwork />} />
+          <Route path="/salary" element={<Salary />} />
         </Routes>
       </main>
 

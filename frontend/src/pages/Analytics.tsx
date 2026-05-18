@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { compareCities, getAIMLStats, getTopCompanies, getTechnicalSkills, getJobsTrend, getAITrend, getSkillsTrend, getTrendsSummary, getEmergingSkills, getDataQualityInsights } from '../api/api';
+import { compareCities, getAIMLStats, getTopCompanies, getTechnicalSkills, getJobsTrend, getAITrend, getSkillsTrend, getTrendsSummary, getEmergingSkills, getDataQualityInsights, getSalaryOverview, getSalaryBySkill, getSalaryByLevel, getSalaryByLocation } from '../api/api';
 import { CitiesComparison, AIMLStats, Company, Skill, TrendDataPoint, AITrendDataPoint, SkillTrendDataPoint, TrendSummary, EmergingSkill, DataQualityInsights } from '../types';
 import { useRealtime } from '../realtime/RealtimeProvider';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
 
-type TabType = 'trends' | 'technologies' | 'cities' | 'ai' | 'companies';
+type TabType = 'trends' | 'technologies' | 'cities' | 'ai' | 'companies' | 'salary';
 
 const Analytics: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('trends');
@@ -26,6 +26,12 @@ const Analytics: React.FC = () => {
   const [trendDays, setTrendDays] = useState<number>(30);
   const { refreshEpoch } = useRealtime();
 
+  // Salary states
+  const [salaryOverview, setSalaryOverview] = useState<any>(null);
+  const [salaryBySkill, setSalaryBySkill] = useState<any[]>([]);
+  const [salaryByLevel, setSalaryByLevel] = useState<any[]>([]);
+  const [salaryByLocation, setSalaryByLocation] = useState<any[]>([]);
+
   // Intentionally refresh dashboards when crawler pushes a new epoch.
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
@@ -37,6 +43,12 @@ const Analytics: React.FC = () => {
       loadTrendData();
     }
   }, [activeTab, trendDays, refreshEpoch]);
+
+  useEffect(() => {
+    if (activeTab === 'salary') {
+      loadSalaryData();
+    }
+  }, [activeTab, refreshEpoch]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
   const loadData = async (): Promise<void> => {
@@ -84,6 +96,28 @@ const Analytics: React.FC = () => {
       setQualityInsights(qualityRes.data || null);
     } catch (error) {
       console.error('[Analytics] Error loading trend data:', error);
+    }
+  };
+
+  const loadSalaryData = async (): Promise<void> => {
+    try {
+      const [overviewRes, skillRes, levelRes, locationRes] = await Promise.all([
+        getSalaryOverview(),
+        getSalaryBySkill(15),
+        getSalaryByLevel(),
+        getSalaryByLocation()
+      ]);
+
+      setSalaryOverview(overviewRes);
+      setSalaryBySkill(Array.isArray(skillRes) ? skillRes : []);
+      setSalaryByLevel(Array.isArray(levelRes) ? levelRes : []);
+      setSalaryByLocation(Array.isArray(locationRes) ? locationRes : []);
+    } catch (error) {
+      console.error('Error loading salary data:', error);
+      setSalaryOverview(null);
+      setSalaryBySkill([]);
+      setSalaryByLevel([]);
+      setSalaryByLocation([]);
     }
   };
 
@@ -1296,6 +1330,373 @@ const Analytics: React.FC = () => {
     );
   };
 
+  const renderSalaryTab = () => {
+    if (!salaryOverview) {
+      return (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+          Đang tải dữ liệu lương...
+        </div>
+      );
+    }
+
+    // Ensure arrays are valid
+    const validSalaryBySkill = Array.isArray(salaryBySkill) ? salaryBySkill : [];
+    const validSalaryByLevel = Array.isArray(salaryByLevel) ? salaryByLevel : [];
+    const validSalaryByLocation = Array.isArray(salaryByLocation) ? salaryByLocation : [];
+
+    // Only create charts if we have data
+    const salaryBySkillChart = validSalaryBySkill.length > 0 ? {
+      labels: validSalaryBySkill.slice(0, 10).map(s => s.skill || ''),
+      datasets: [{
+        label: 'Lương TB (triệu VND)',
+        data: validSalaryBySkill.slice(0, 10).map(s => s.avg_salary || 0),
+        backgroundColor: '#FFBB28',
+      }]
+    } : null;
+
+    const salaryByLevelChart = validSalaryByLevel.length > 0 ? {
+      labels: validSalaryByLevel.map(l => l.level || ''),
+      datasets: [
+        {
+          label: 'Lương Min TB',
+          data: validSalaryByLevel.map(l => l.avg_min_salary || 0),
+          backgroundColor: '#00C49F',
+        },
+        {
+          label: 'Lương Max TB',
+          data: validSalaryByLevel.map(l => l.avg_max_salary || 0),
+          backgroundColor: '#0088FE',
+        }
+      ]
+    } : null;
+
+    const salaryByLocationChart = validSalaryByLocation.length > 0 ? {
+      labels: validSalaryByLocation.map(l => l.location || ''),
+      datasets: [{
+        label: 'Lương TB (triệu VND)',
+        data: validSalaryByLocation.map(l => l.avg_salary || 0),
+        backgroundColor: '#00C49F',
+      }]
+    } : null;
+
+    return (
+      <div>
+        {/* Overview Cards */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '16px',
+          marginBottom: '24px'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              JOBS CÓ LƯƠNG
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#00C49F'
+            }}>
+              {salaryOverview.jobs_with_salary?.toLocaleString() || 0}
+            </div>
+            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
+              {salaryOverview.coverage_percentage || 0}% tổng số jobs
+            </div>
+          </div>
+
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              LƯƠNG TRUNG BÌNH
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '24px', 
+              fontWeight: 'bold',
+              color: '#FFBB28'
+            }}>
+              {salaryOverview.avg_min_salary?.toFixed(1) || 0} - {salaryOverview.avg_max_salary?.toFixed(1) || 0}
+            </div>
+            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
+              triệu VND/tháng
+            </div>
+          </div>
+
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '11px', 
+              fontWeight: '600', 
+              color: '#6B7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '8px'
+            }}>
+              JOBS THỎA THUẬN
+            </div>
+            <div style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '30px', 
+              fontWeight: 'bold',
+              color: '#FF8042'
+            }}>
+              {salaryOverview.negotiable_jobs?.toLocaleString() || 0}
+            </div>
+            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '4px' }}>
+              {((salaryOverview.negotiable_jobs / salaryOverview.total_jobs) * 100).toFixed(1)}% tổng số
+            </div>
+          </div>
+        </div>
+
+        {/* Salary by Level */}
+        {salaryByLevelChart && validSalaryByLevel.length > 0 && (
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            marginBottom: '16px'
+          }}>
+            <h2 style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              marginBottom: '16px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid #E2E8F0'
+            }}>
+              💼 Lương Theo Cấp Bậc (Kinh Nghiệm)
+            </h2>
+            <Bar data={salaryByLevelChart} options={{ 
+              responsive: true,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'top' as const,
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Triệu VND/tháng'
+                  }
+                }
+              }
+            }} />
+
+            {/* Table */}
+            <div style={{ marginTop: '20px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>CẤP BẬC</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>SỐ JOBS</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>LƯƠNG TB</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>MIN - MAX</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {validSalaryByLevel.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                      <td style={{ padding: '12px 16px', color: '#1E3A5F', fontWeight: '500' }}>{item.level}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#6B7280' }}>{item.job_count}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#1E3A5F', fontWeight: '600' }}>{item.avg_salary.toFixed(1)} triệu</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#6B7280' }}>{item.min_salary.toFixed(1)} - {item.max_salary.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Salary by Skill */}
+        {salaryBySkillChart && validSalaryBySkill.length > 0 && (
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            marginBottom: '16px'
+          }}>
+            <h2 style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              marginBottom: '16px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid #E2E8F0'
+            }}>
+              🔥 Top 10 Kỹ Năng Có Lương Cao Nhất
+            </h2>
+            <Bar data={salaryBySkillChart} options={{ 
+              responsive: true,
+              indexAxis: 'y',
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Triệu VND/tháng'
+                  }
+                }
+              }
+            }} />
+
+            {/* Table */}
+            <div style={{ marginTop: '20px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>KỸ NĂNG</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>SỐ JOBS</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>LƯƠNG TB</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>MIN - MAX</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {validSalaryBySkill.slice(0, 15).map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                      <td style={{ padding: '12px 16px', color: '#1E3A5F', fontWeight: '500' }}>{item.skill}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#6B7280' }}>{item.job_count}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#FFBB28', fontWeight: '600' }}>{item.avg_salary.toFixed(1)} triệu</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#6B7280' }}>{item.min_salary.toFixed(1)} - {item.max_salary.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Salary by Location */}
+        {salaryByLocationChart && validSalaryByLocation.length > 0 && (
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '16px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+            <h2 style={{ 
+              fontFamily: 'Noto Serif, serif',
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1E3A5F',
+              marginBottom: '16px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid #E2E8F0'
+            }}>
+              🏙️ Lương Theo Địa Điểm
+            </h2>
+            <Bar data={salaryByLocationChart} options={{ 
+              responsive: true,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Triệu VND/tháng'
+                  }
+                }
+              }
+            }} />
+
+            {/* Table */}
+            <div style={{ marginTop: '20px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                    <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>ĐỊA ĐIỂM</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>SỐ JOBS</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>LƯƠNG TB</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: '600', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase' }}>MIN - MAX</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {validSalaryByLocation.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                      <td style={{ padding: '12px 16px', color: '#1E3A5F', fontWeight: '500' }}>{item.location}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#6B7280' }}>{item.job_count}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#00C49F', fontWeight: '600' }}>{item.avg_salary.toFixed(1)} triệu</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', color: '#6B7280' }}>{item.min_salary.toFixed(1)} - {item.max_salary.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* No data message */}
+        {validSalaryBySkill.length === 0 && validSalaryByLevel.length === 0 && (
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '4px',
+            padding: '40px',
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ color: '#6B7280', marginBottom: '12px' }}>⚠️ Chưa có dữ liệu lương</h3>
+            <p style={{ color: '#94A3B8', margin: 0 }}>
+              Vui lòng chạy crawler để thu thập dữ liệu lương từ VietnamWorks
+            </p>
+            <p style={{ color: '#94A3B8', marginTop: '8px', fontSize: '13px' }}>
+              Chạy lệnh: <code style={{ backgroundColor: '#F1F5F9', padding: '4px 8px', borderRadius: '4px' }}>./RUN_CRAWLER_NOW.sh</code>
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{ 
       backgroundColor: '#F8FAFC', 
@@ -1477,6 +1878,36 @@ const Analytics: React.FC = () => {
           >
             🏢 Top Công Ty
           </button>
+          <button 
+            style={{
+              padding: '12px 16px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: activeTab === 'salary' ? '600' : '500',
+              color: activeTab === 'salary' ? '#1E3A5F' : '#6B7280',
+              borderBottom: activeTab === 'salary' ? '2px solid #1E3A5F' : '2px solid transparent',
+              marginBottom: '-1px',
+              transition: 'all 0.15s ease',
+              fontFamily: 'Inter, sans-serif'
+            }}
+            onClick={() => setActiveTab('salary')}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'salary') {
+                e.currentTarget.style.color = '#1E3A5F';
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'salary') {
+                e.currentTarget.style.color = '#6B7280';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            💰 Phân Tích Lương
+          </button>
         </div>
 
         {activeTab === 'trends' && renderTrendsTab()}
@@ -1484,6 +1915,7 @@ const Analytics: React.FC = () => {
         {activeTab === 'cities' && renderCitiesTab()}
         {activeTab === 'ai' && renderAITab()}
         {activeTab === 'companies' && renderCompaniesTab()}
+        {activeTab === 'salary' && renderSalaryTab()}
       </div>
     </div>
   );

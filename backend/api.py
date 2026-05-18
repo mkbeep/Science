@@ -1284,6 +1284,377 @@ def get_data_quality_insights():
 # ============================================================================
 
 # ============================================================================
+# SALARY ANALYSIS ENDPOINTS
+# ============================================================================
+
+@app.route('/api/salary/overview', methods=['GET'])
+def get_salary_overview():
+    """Get salary overview statistics"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check which table to use
+    table_name = 'jobs_realtime' if table_exists(conn, 'jobs_realtime') else 'jobs'
+    
+    try:
+        # Total jobs with salary info
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM {table_name}
+            WHERE (salary_min_monthly IS NOT NULL AND salary_min_monthly > 0)
+               OR (salary_max_monthly IS NOT NULL AND salary_max_monthly > 0)
+               OR is_negotiable = 1
+        """)
+        jobs_with_salary = cursor.fetchone()[0]
+        
+        # Total jobs
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        total_jobs = cursor.fetchone()[0]
+        
+        # Average salary (only non-negotiable jobs)
+        cursor.execute(f"""
+            SELECT 
+                AVG(salary_min_monthly) as avg_min,
+                AVG(salary_max_monthly) as avg_max,
+                MIN(salary_min_monthly) as min_salary,
+                MAX(salary_max_monthly) as max_salary
+            FROM {table_name}
+            WHERE is_negotiable = 0
+              AND salary_min_monthly > 0
+              AND salary_max_monthly > 0
+        """)
+        row = cursor.fetchone()
+        
+        # Negotiable jobs count
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM {table_name}
+            WHERE is_negotiable = 1
+        """)
+        negotiable_count = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({
+            'total_jobs': total_jobs,
+            'jobs_with_salary': jobs_with_salary,
+            'jobs_without_salary': total_jobs - jobs_with_salary,
+            'negotiable_jobs': negotiable_count,
+            'coverage_percentage': round((jobs_with_salary / total_jobs * 100), 2) if total_jobs > 0 else 0,
+            'avg_min_salary': round(row[0], 1) if row[0] else 0,
+            'avg_max_salary': round(row[1], 1) if row[1] else 0,
+            'min_salary': round(row[2], 1) if row[2] else 0,
+            'max_salary': round(row[3], 1) if row[3] else 0,
+        })
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/salary/by-skill', methods=['GET'])
+def get_salary_by_skill():
+    """Get average salary by skill"""
+    limit = request.args.get('limit', 15, type=int)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check which tables to use
+    jobs_table = 'jobs_realtime' if table_exists(conn, 'jobs_realtime') else 'jobs'
+    skills_table = 'job_skills_realtime' if table_exists(conn, 'job_skills_realtime') else 'job_skills'
+    
+    skill_col = get_skill_column(conn, skills_table)
+    
+    try:
+        cursor.execute(f"""
+            SELECT 
+                js.{skill_col} as skill,
+                COUNT(DISTINCT j.job_id) as job_count,
+                AVG((j.salary_min_monthly + j.salary_max_monthly) / 2) as avg_salary,
+                MIN(j.salary_min_monthly) as min_salary,
+                MAX(j.salary_max_monthly) as max_salary
+            FROM {skills_table} js
+            JOIN {jobs_table} j ON js.job_id = j.job_id
+            WHERE j.is_negotiable = 0
+              AND j.salary_min_monthly > 0
+              AND j.salary_max_monthly > 0
+              AND j.salary_currency = 'VND'
+              AND js.{skill_col} IS NOT NULL
+              AND TRIM(js.{skill_col}) != ''
+            GROUP BY js.{skill_col}
+            HAVING job_count >= 2
+            ORDER BY avg_salary DESC
+            LIMIT ?
+        """, (limit,))
+        
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'skill': row[0],
+                'job_count': row[1],
+                'avg_salary': round(row[2], 1) if row[2] else 0,
+                'min_salary': round(row[3], 1) if row[3] else 0,
+                'max_salary': round(row[4], 1) if row[4] else 0,
+            })
+        
+        conn.close()
+        return jsonify(results)
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/salary/by-level', methods=['GET'])
+def get_salary_by_level():
+    """Get average salary by job level"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    table_name = 'jobs_realtime' if table_exists(conn, 'jobs_realtime') else 'jobs'
+    
+    try:
+        cursor.execute(f"""
+            SELECT 
+                job_level,
+                COUNT(*) as job_count,
+                AVG((salary_min_monthly + salary_max_monthly) / 2) as avg_salary,
+                MIN(salary_min_monthly) as min_salary,
+                MAX(salary_max_monthly) as max_salary,
+                AVG(salary_min_monthly) as avg_min,
+                AVG(salary_max_monthly) as avg_max
+            FROM {table_name}
+            WHERE is_negotiable = 0
+              AND salary_min_monthly > 0
+              AND salary_max_monthly > 0
+              AND salary_currency = 'VND'
+              AND job_level IS NOT NULL
+              AND TRIM(job_level) != ''
+            GROUP BY job_level
+            ORDER BY avg_salary DESC
+        """)
+        
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'level': row[0],
+                'job_count': row[1],
+                'avg_salary': round(row[2], 1) if row[2] else 0,
+                'min_salary': round(row[3], 1) if row[3] else 0,
+                'max_salary': round(row[4], 1) if row[4] else 0,
+                'avg_min_salary': round(row[5], 1) if row[5] else 0,
+                'avg_max_salary': round(row[6], 1) if row[6] else 0,
+            })
+        
+        conn.close()
+        return jsonify(results)
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/salary/by-location', methods=['GET'])
+def get_salary_by_location():
+    """Get average salary by location"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    table_name = 'jobs_realtime' if table_exists(conn, 'jobs_realtime') else 'jobs'
+    location_col = get_location_column(conn, table_name)
+    
+    try:
+        cursor.execute(f"""
+            SELECT 
+                {location_col} as location,
+                COUNT(*) as job_count,
+                AVG((salary_min_monthly + salary_max_monthly) / 2) as avg_salary,
+                MIN(salary_min_monthly) as min_salary,
+                MAX(salary_max_monthly) as max_salary
+            FROM {table_name}
+            WHERE is_negotiable = 0
+              AND salary_min_monthly > 0
+              AND salary_max_monthly > 0
+              AND salary_currency = 'VND'
+              AND {location_col} IS NOT NULL
+              AND TRIM({location_col}) != ''
+            GROUP BY {location_col}
+            HAVING job_count >= 3
+            ORDER BY avg_salary DESC
+        """)
+        
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'location': row[0],
+                'job_count': row[1],
+                'avg_salary': round(row[2], 1) if row[2] else 0,
+                'min_salary': round(row[3], 1) if row[3] else 0,
+                'max_salary': round(row[4], 1) if row[4] else 0,
+            })
+        
+        conn.close()
+        return jsonify(results)
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/salary/distribution', methods=['GET'])
+def get_salary_distribution():
+    """Get salary distribution (histogram data)"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    table_name = 'jobs_realtime' if table_exists(conn, 'jobs_realtime') else 'jobs'
+    
+    try:
+        # Get all salaries
+        cursor.execute(f"""
+            SELECT (salary_min_monthly + salary_max_monthly) / 2 as avg_salary
+            FROM {table_name}
+            WHERE is_negotiable = 0
+              AND salary_min_monthly > 0
+              AND salary_max_monthly > 0
+              AND salary_currency = 'VND'
+        """)
+        
+        salaries = [row[0] for row in cursor.fetchall()]
+        
+        # Create salary ranges (bins)
+        ranges = [
+            {'range': '0-10 triệu', 'min': 0, 'max': 10, 'count': 0},
+            {'range': '10-20 triệu', 'min': 10, 'max': 20, 'count': 0},
+            {'range': '20-30 triệu', 'min': 20, 'max': 30, 'count': 0},
+            {'range': '30-40 triệu', 'min': 30, 'max': 40, 'count': 0},
+            {'range': '40-50 triệu', 'min': 40, 'max': 50, 'count': 0},
+            {'range': '50-70 triệu', 'min': 50, 'max': 70, 'count': 0},
+            {'range': '70-100 triệu', 'min': 70, 'max': 100, 'count': 0},
+            {'range': '100+ triệu', 'min': 100, 'max': 9999, 'count': 0},
+        ]
+        
+        # Count salaries in each range
+        for salary in salaries:
+            for r in ranges:
+                if r['min'] <= salary < r['max']:
+                    r['count'] += 1
+                    break
+        
+        conn.close()
+        return jsonify(ranges)
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/salary/by-company', methods=['GET'])
+def get_salary_by_company():
+    """Get average salary by top companies"""
+    limit = request.args.get('limit', 15, type=int)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    table_name = 'jobs_realtime' if table_exists(conn, 'jobs_realtime') else 'jobs'
+    
+    try:
+        cursor.execute(f"""
+            SELECT 
+                company,
+                COUNT(*) as job_count,
+                AVG((salary_min_monthly + salary_max_monthly) / 2) as avg_salary,
+                MIN(salary_min_monthly) as min_salary,
+                MAX(salary_max_monthly) as max_salary
+            FROM {table_name}
+            WHERE is_negotiable = 0
+              AND salary_min_monthly > 0
+              AND salary_max_monthly > 0
+              AND salary_currency = 'VND'
+              AND company IS NOT NULL
+              AND TRIM(company) != ''
+            GROUP BY company
+            HAVING job_count >= 2
+            ORDER BY avg_salary DESC
+            LIMIT ?
+        """, (limit,))
+        
+        results = []
+        for row in cursor.fetchall():
+            results.append({
+                'company': row[0],
+                'job_count': row[1],
+                'avg_salary': round(row[2], 1) if row[2] else 0,
+                'min_salary': round(row[3], 1) if row[3] else 0,
+                'max_salary': round(row[4], 1) if row[4] else 0,
+            })
+        
+        conn.close()
+        return jsonify(results)
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/salary/skill-level-matrix', methods=['GET'])
+def get_salary_skill_level_matrix():
+    """Get salary matrix by skill and level"""
+    skills = request.args.getlist('skills')
+    
+    if not skills:
+        # Default top skills
+        skills = ['Python', 'Java', 'JavaScript', 'React', 'Node.js']
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    jobs_table = 'jobs_realtime' if table_exists(conn, 'jobs_realtime') else 'jobs'
+    skills_table = 'job_skills_realtime' if table_exists(conn, 'job_skills_realtime') else 'job_skills'
+    skill_col = get_skill_column(conn, skills_table)
+    
+    try:
+        results = []
+        
+        for skill in skills:
+            cursor.execute(f"""
+                SELECT 
+                    j.job_level,
+                    AVG((j.salary_min_monthly + j.salary_max_monthly) / 2) as avg_salary,
+                    COUNT(*) as job_count
+                FROM {skills_table} js
+                JOIN {jobs_table} j ON js.job_id = j.job_id
+                WHERE js.{skill_col} LIKE ?
+                  AND j.is_negotiable = 0
+                  AND j.salary_min_monthly > 0
+                  AND j.salary_max_monthly > 0
+                  AND j.job_level IS NOT NULL
+                  AND TRIM(j.job_level) != ''
+                GROUP BY j.job_level
+            """, (f'%{skill}%',))
+            
+            skill_data = {
+                'skill': skill,
+                'levels': []
+            }
+            
+            for row in cursor.fetchall():
+                skill_data['levels'].append({
+                    'level': row[0],
+                    'avg_salary': round(row[1], 1) if row[1] else 0,
+                    'job_count': row[2]
+                })
+            
+            results.append(skill_data)
+        
+        conn.close()
+        return jsonify(results)
+        
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 

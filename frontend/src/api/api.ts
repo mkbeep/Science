@@ -107,4 +107,41 @@ export const fetchInsightCategories = async () => {
   return response.data;
 };
 
+// Salary Analysis APIs
+export const getSalaryOverview = async () => {
+  const response = await api.get('/salary/overview');
+  return response.data;
+};
+
+export const getSalaryBySkill = async (limit = 15) => {
+  const response = await api.get(`/salary/by-skill?limit=${limit}`);
+  return response.data;
+};
+
+export const getSalaryByLevel = async () => {
+  const response = await api.get('/salary/by-level');
+  return response.data;
+};
+
+export const getSalaryByLocation = async () => {
+  const response = await api.get('/salary/by-location');
+  return response.data;
+};
+
+export const getSalaryDistribution = async () => {
+  const response = await api.get('/salary/distribution');
+  return response.data;
+};
+
+export const getSalaryByCompany = async (limit = 15) => {
+  const response = await api.get(`/salary/by-company?limit=${limit}`);
+  return response.data;
+};
+
+export const getSalarySkillLevelMatrix = async (skills?: string[]) => {
+  const params = skills ? `?skills=${skills.join(',')}` : '';
+  const response = await api.get(`/salary/skill-level-matrix${params}`);
+  return response.data;
+};
+
 export default api;
