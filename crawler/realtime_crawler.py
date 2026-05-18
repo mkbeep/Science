@@ -17,6 +17,7 @@ import sqlite3
 
 from alerting import notify_webhook
 from http_client import MIN_REQUEST_INTERVAL_SEC, TransientHTTPError, post_json_with_retries, post_notify
+from salary_parser import normalize_salary
 
 SKILL_ALIASES = {
     'js': 'javascript',
@@ -166,7 +167,7 @@ def crawl_vietnamworks():
                 "page": page,
                 "retrieveFields": [
                     "jobTitle", "jobId", "companyName",
-                    "salaryMin", "salaryMax", "salary",
+                    "salaryMin", "salaryMax", "salary", "prettySalary", "isSalaryVisible",
                     "workingLocations", "skills", "jobUrl", "jobLevel"
                 ]
             }
@@ -229,6 +230,31 @@ def crawl_vietnamworks():
                                 location = locations_data[0].get("cityNameVI", "")
                         canonical_location = canonicalize_location(location)
                         
+                        # Extract and normalize salary
+                        api_salary_min = job.get("salaryMin")
+                        api_salary_max = job.get("salaryMax")
+                        salary_text = job.get("prettySalary", "") or job.get("salary", "")
+                        is_salary_visible = job.get("isSalaryVisible", False)
+                        
+                        # Chỉ xử lý nếu có thông tin lương
+                        if is_salary_visible or salary_text or (api_salary_min and api_salary_min > 0) or (api_salary_max and api_salary_max > 0):
+                            salary_info = normalize_salary(
+                                salary_min=None,
+                                salary_max=None,
+                                salary_text=str(salary_text),
+                                api_min=api_salary_min if api_salary_min and api_salary_min > 0 else None,
+                                api_max=api_salary_max if api_salary_max and api_salary_max > 0 else None
+                            )
+                        else:
+                            # Không có thông tin lương
+                            salary_info = {
+                                'salary_min_monthly': None,
+                                'salary_max_monthly': None,
+                                'salary_currency': 'VND',
+                                'salary_text': '',
+                                'is_negotiable': False
+                            }
+                        
                         job_data = {
                             "job_id": job_id,
                             "title": raw_title or job.get("jobTitle", ""),
@@ -241,6 +267,11 @@ def crawl_vietnamworks():
                             "search_keyword": keyword,
                             "content_fingerprint": fp,
                             "job_url": raw_url,
+                            "salary_min_monthly": salary_info['salary_min_monthly'],
+                            "salary_max_monthly": salary_info['salary_max_monthly'],
+                            "salary_currency": salary_info['salary_currency'],
+                            "salary_text": salary_info['salary_text'],
+                            "is_negotiable": salary_info['is_negotiable'],
                         }
                         max_fuzzy = 0.0
                         for prev in accepted_jobs[-300:]:
@@ -325,6 +356,17 @@ def _ensure_jobs_realtime_extra_columns(cursor):
         cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN dedupe_score REAL')
     if 'quality_score' not in columns:
         cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN quality_score REAL')
+    # Add salary columns
+    if 'salary_min_monthly' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN salary_min_monthly REAL')
+    if 'salary_max_monthly' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN salary_max_monthly REAL')
+    if 'salary_currency' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN salary_currency TEXT DEFAULT "VND"')
+    if 'salary_text' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN salary_text TEXT')
+    if 'is_negotiable' not in columns:
+        cursor.execute('ALTER TABLE jobs_realtime ADD COLUMN is_negotiable BOOLEAN DEFAULT 0')
 
 
 def save_jobs_to_database(jobs):
@@ -418,7 +460,9 @@ def save_jobs_to_database(jobs):
                 SET title = ?, company = ?, location = ?, skills = ?,
                     job_level = ?, crawled_date = date('now'), search_keyword = ?,
                     content_fingerprint = ?, job_url = ?, canonical_location = ?,
-                    canonical_skills = ?, dedupe_score = ?, quality_score = ?
+                    canonical_skills = ?, dedupe_score = ?, quality_score = ?,
+                    salary_min_monthly = ?, salary_max_monthly = ?, salary_currency = ?,
+                    salary_text = ?, is_negotiable = ?
                 WHERE job_id = ?
                 ''',
                 (
@@ -434,6 +478,11 @@ def save_jobs_to_database(jobs):
                     job.get('canonical_skills') or None,
                     float(job.get('dedupe_score', 0.0)),
                     float(job.get('quality_score', 0.0)),
+                    job.get('salary_min_monthly'),
+                    job.get('salary_max_monthly'),
+                    job.get('salary_currency', 'VND'),
+                    job.get('salary_text', ''),
+                    1 if job.get('is_negotiable') else 0,
                     jid,
                 ),
             )
@@ -444,8 +493,9 @@ def save_jobs_to_database(jobs):
                 INSERT INTO jobs_realtime
                 (job_id, title, company, location, skills, job_level, crawled_date,
                  search_keyword, content_fingerprint, job_url, canonical_location,
-                 canonical_skills, dedupe_score, quality_score)
-                VALUES (?, ?, ?, ?, ?, ?, date('now'), ?, ?, ?, ?, ?, ?, ?)
+                 canonical_skills, dedupe_score, quality_score,
+                 salary_min_monthly, salary_max_monthly, salary_currency, salary_text, is_negotiable)
+                VALUES (?, ?, ?, ?, ?, ?, date('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''',
                 (
                     jid,
@@ -461,6 +511,11 @@ def save_jobs_to_database(jobs):
                     job.get('canonical_skills') or None,
                     float(job.get('dedupe_score', 0.0)),
                     float(job.get('quality_score', 0.0)),
+                    job.get('salary_min_monthly'),
+                    job.get('salary_max_monthly'),
+                    job.get('salary_currency', 'VND'),
+                    job.get('salary_text', ''),
+                    1 if job.get('is_negotiable') else 0,
                 ),
             )
             new_jobs += 1
